@@ -51,3 +51,5 @@ def should_release(pr_diff, test_report):
 如果你对某篇文章有疑问或想法，欢迎到 GitHub 仓库提 Issue 交流。
 
 让我们开始吧。
+
+<video src="/media/video/test_vedio.mp4" controls></video>
