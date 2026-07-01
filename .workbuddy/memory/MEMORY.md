@@ -1,4 +1,4 @@
-# agni-site 项目长期记忆
+# niutech 项目长期记忆
 
 ## 项目定位
 博主「热爱技术的小牛」的个人技术博客。博主是测试开发工程师，内容方向：测试提效工具、AI 提效工具、AI SaaS 项目实战。
@@ -10,15 +10,21 @@
 - 部署：GitHub Actions → GitHub Pages
 
 ## 关键配置
+- 英文标识：`niutech`（仓库名/域名/logo 用），站名「热爱技术的小牛」
 - `astro.config.mjs`：site/base 需按用户 GitHub 地址配置（当前占位 yourusername）
-- base 默认 `/agni-site`（项目站点）
+- base 默认 `/niutech`（项目站点）
+- package.json name = `niutech`
 - 发布服务端口 4399，密码在 `publisher/.env` 的 PUBLISHER_PASSWORD
 - 构建需环境变量 `ASTRO_TELEMETRY_DISABLED=1`（沙箱拦截遥测写 Library/Preferences）
 
 ## 命令
-- `npm run dev`：本地预览博客（http://localhost:4321/agni-site）
+- `npm run dev`：本地预览博客（http://localhost:4321/niutech）
 - `npm run build`：构建到 dist/
 - `npm run publisher`：启动发布台（http://localhost:4399）
+
+## Git 历史
+- 旧 SaaS 网站（Vite+React TestAgent 官网）的 git 历史已清空（用户确认不需要备份）
+- 当前 git 历史从 `feat: 初始化「热爱技术的小牛」个人技术博客 (niutech)` 开始
 
 ## 发布流程
 1. `npm run publisher` 启动发布台
@@ -27,3 +33,4 @@
 
 ## 博主相关项目
 - /Users/rock/Documents/ai-test-agent：PR/MR 驱动的 AI 自动化测试平台（FastAPI+React+Celery），博客示例文章参考了该项目
+

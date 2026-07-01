@@ -10,7 +10,7 @@ export const AUTHOR = {
   bio: '专注测试提效工具、AI 提效工具与 AI SaaS 项目的开发与实战分享。',
   tags: ['测试提效', 'AI 提效', 'AI SaaS', '自动化测试', '工程效率'],
   social: {
-    github: 'https://github.com/yourusername',
+    github: 'https://github.com/github653224',
   },
 };
 

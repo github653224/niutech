@@ -11,7 +11,7 @@ import tailwind from '@astrojs/tailwind';
 //    base = '/'
 // 请把 yourusername 替换为你的 GitHub 用户名。
 export default defineConfig({
-  site: 'https://yourusername.github.io',
+  site: 'https://github653224.github.io',
   base: '/niutech',
   integrations: [tailwind()],
   markdown: {
