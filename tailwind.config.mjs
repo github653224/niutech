@@ -17,6 +17,7 @@ export default {
           800: '#183cb6',
           900: '#1a388f',
         },
+        'brand-raw': '50 123 255',
       },
       fontFamily: {
         sans: ['"Inter"', '"Noto Sans SC"', 'system-ui', 'sans-serif'],

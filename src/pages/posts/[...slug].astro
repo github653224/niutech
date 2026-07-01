@@ -2,6 +2,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
+import PostToc from '../../components/PostToc.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts', ({ data }) => !data.draft);
@@ -69,4 +70,7 @@ const next = index < allPosts.length - 1 ? allPosts[index + 1] : null;
       ) : <div />}
     </nav>
   </article>
+
+  <!-- 浮动目录 + 回到顶部/底部 -->
+  <PostToc />
 </BaseLayout>

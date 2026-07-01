@@ -1,0 +1,217 @@
+---
+// 文章浮动目录 + 回到顶部/底部按钮
+// 自动从页面 h2/h3 生成目录，滚动时高亮当前章节
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<!-- 浮动目录（左侧，仅大屏显示） -->
+<aside id="toc" class="toc-aside" aria-label="文章目录">
+  <div class="toc-inner">
+    <p class="toc-title">目录</p>
+    <nav id="toc-nav" class="toc-nav"></nav>
+  </div>
+</aside>
+
+<!-- 右下角浮动按钮 -->
+<div class="float-actions">
+  <button id="back-to-top" class="float-btn" title="回到顶部" aria-label="回到顶部">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  </button>
+  <button id="back-to-bottom" class="float-btn" title="回到底部" aria-label="回到底部">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </button>
+</div>
+
+<script>
+  // ===== 生成目录 =====
+  const headings = document.querySelectorAll('.prose-custom h2, .prose-custom h3');
+  const tocNav = document.getElementById('toc-nav');
+  const tocAside = document.getElementById('toc');
+
+  if (headings.length >= 2) {
+    headings.forEach((h, i) => {
+      // 给标题加 id（如果没有的话）
+      if (!h.id) {
+        h.id = 'heading-' + i;
+      }
+      const level = h.tagName.toLowerCase();
+      const a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.className = 'toc-link toc-' + level;
+      a.textContent = h.textContent;
+      a.dataset.target = h.id;
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      tocNav.appendChild(a);
+    });
+  } else {
+    // 标题太少，隐藏目录
+    tocAside.style.display = 'none';
+  }
+
+  // ===== 滚动高亮 + 按钮显隐 =====
+  const tocLinks = tocNav.querySelectorAll('.toc-link');
+  const backToTop = document.getElementById('back-to-top');
+  const backToBottom = document.getElementById('back-to-bottom');
+
+  function updateActive() {
+    const scrollY = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const threshold = 100;
+
+    // 回到顶部按钮：滚动超过 300px 显示
+    backToTop.classList.toggle('show', scrollY > 300);
+    // 回到底部按钮：距底部超过 300px 显示
+    backToBottom.classList.toggle('show', scrollY < docHeight - 300);
+
+    // 目录高亮
+    let activeIdx = -1;
+    for (let i = headings.length - 1; i >= 0; i--) {
+      if (headings[i].getBoundingClientRect().top < threshold) {
+        activeIdx = i;
+        break;
+      }
+    }
+    tocLinks.forEach((link, i) => {
+      link.classList.toggle('active', i === activeIdx);
+    });
+
+    // 滚动目录到可视区域
+    if (activeIdx >= 0) {
+      const activeLink = tocLinks[activeIdx];
+      const navRect = tocNav.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      if (linkRect.top < navRect.top || linkRect.bottom > navRect.bottom) {
+        tocNav.scrollTop = activeLink.offsetTop - tocNav.clientHeight / 2 + linkRect.height / 2;
+      }
+    }
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+
+  // ===== 按钮点击 =====
+  backToTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  backToBottom.addEventListener('click', () => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  });
+</script>
+
+<style>
+  /* 浮动目录 */
+  .toc-aside {
+    position: fixed;
+    left: calc(50% - 42rem);
+    top: 8rem;
+    width: 15rem;
+    max-height: calc(100vh - 12rem);
+    overflow-y: auto;
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .toc-aside { display: block; }
+  }
+  .toc-inner {
+    position: sticky;
+    top: 8rem;
+  }
+  .toc-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgb(var(--muted));
+    margin-bottom: 12px;
+    padding-left: 12px;
+  }
+  .toc-nav {
+    max-height: calc(100vh - 16rem);
+    overflow-y: auto;
+    border-left: 2px solid rgb(var(--border));
+    padding-left: 0;
+  }
+  .toc-nav::-webkit-scrollbar { width: 4px; }
+  .toc-nav::-webkit-scrollbar-thumb { background: rgb(var(--border)); border-radius: 2px; }
+
+  .toc-link {
+    display: block;
+    padding: 5px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgb(var(--muted));
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    margin-left: -2px;
+    transition: all 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toc-link:hover {
+    color: rgb(var(--fg));
+  }
+  .toc-link.active {
+    color: rgb(var(--brand));
+    border-left-color: rgb(var(--brand));
+    font-weight: 600;
+    background: rgba(var(--brand-raw), 0.06);
+  }
+  .toc-link.toc-h3 {
+    padding-left: 24px;
+    font-size: 12px;
+  }
+
+  /* 右下角浮动按钮 */
+  .float-actions {
+    position: fixed;
+    right: 2rem;
+    bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 50;
+  }
+  .float-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgb(var(--card));
+    border: 1px solid rgb(var(--border));
+    color: rgb(var(--muted));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .float-btn.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .float-btn:hover {
+    color: rgb(var(--brand));
+    border-color: rgb(var(--brand));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+
+  @media (max-width: 640px) {
+    .float-actions {
+      right: 1rem;
+      bottom: 1rem;
+    }
+    .float-btn {
+      width: 36px;
+      height: 36px;
+    }
+  }
+</style>
