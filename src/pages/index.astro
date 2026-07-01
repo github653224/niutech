@@ -1,0 +1,63 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import { AUTHOR, SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => {
+    // 置顶优先
+    const pa = a.data.pinned ? 1 : 0;
+    const pb = b.data.pinned ? 1 : 0;
+    if (pa !== pb) return pb - pa;
+    return b.data.pubDate.valueOf() - a.data.pubDate.valueOf();
+  });
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout>
+  <!-- Hero -->
+  <section class="border-b" style="border-color: rgb(var(--border));">
+    <div class="container-wide py-14 sm:py-20">
+      <div class="flex items-start gap-5">
+        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white text-2xl font-bold shadow-lg shadow-brand-500/30">
+          牛
+        </div>
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            {AUTHOR.name}
+          </h1>
+          <p class="mt-1.5 text-base sm:text-lg" style="color: rgb(var(--muted));">
+            {AUTHOR.role} · {AUTHOR.bio}
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {AUTHOR.tags.map((t) => (
+              <span class="tag-chip">#{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 文章列表 -->
+  <section class="container-wide py-12">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold tracking-tight">最新文章</h2>
+      <span class="text-sm" style="color: rgb(var(--muted));">共 {posts.length} 篇</span>
+    </div>
+
+    {
+      posts.length > 0 ? (
+        <div class="grid gap-5 sm:grid-cols-2">
+          {posts.map((post) => <PostCard post={post} />)}
+        </div>
+      ) : (
+        <div class="card p-12 text-center">
+          <p style="color: rgb(var(--muted));">还没有文章，快去发布第一篇吧。</p>
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>
