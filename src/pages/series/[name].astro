@@ -8,27 +8,57 @@ export async function getStaticPaths() {
   const seriesNames = new Set<string>();
   allPosts.forEach((p) => seriesNames.add(p.data.series!));
 
-  return [...seriesNames].map((name) => ({
-    params: { name },
-    props: {
-      name,
-      posts: allPosts
-        .filter((p) => p.data.series === name)
-        .sort((a, b) => {
-          const oa = a.data.seriesOrder ?? 999;
-          const ob = b.data.seriesOrder ?? 999;
-          return oa - ob;
-        }),
-    },
-  }));
+  return [...seriesNames].map((name) => {
+    const posts = allPosts
+      .filter((p) => p.data.series === name)
+      .sort((a, b) => {
+        const oa = a.data.seriesOrder ?? 999;
+        const ob = b.data.seriesOrder ?? 999;
+        return oa - ob;
+      });
+    // 从系列文章中找一个有 seriesTotal 或 seriesOutline 的，用来渲染待更新占位
+    const meta = posts.find((p) => p.data.seriesTotal || (p.data.seriesOutline && p.data.seriesOutline.length));
+    const seriesTotal = meta?.data.seriesTotal;
+    const seriesOutline = meta?.data.seriesOutline || [];
+    return {
+      params: { name },
+      props: { name, posts, seriesTotal, seriesOutline },
+    };
+  });
 }
 
-const { name, posts } = Astro.props;
+const { name, posts, seriesTotal, seriesOutline } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const seriesSlug = encodeURIComponent(name);
+
+// 构建完整的渲染列表：已发布的 + 待更新的占位
+// total 优先用 seriesTotal，否则用已发布数量
+const totalCount = seriesTotal ?? posts.length;
+const publishedOrders = new Set(posts.map((p) => p.data.seriesOrder ?? 0));
+
+interface RenderItem {
+  order: number;
+  published: boolean;
+  post?: typeof posts[0];
+  outlineTitle?: string;
+}
+
+const renderItems: RenderItem[] = [];
+for (let i = 1; i <= totalCount; i++) {
+  const post = posts.find((p) => (p.data.seriesOrder ?? 0) === i);
+  if (post) {
+    renderItems.push({ order: i, published: true, post });
+  } else {
+    // 未发布：从大纲取标题
+    const outlineTitle = seriesOutline[i - 1];
+    renderItems.push({ order: i, published: false, outlineTitle });
+  }
+}
+
+const publishedCount = posts.length;
+const progressPercent = totalCount > 0 ? Math.round((publishedCount / totalCount) * 100) : 100;
 ---
 
-<BaseLayout title={`${name} - 系列 - 热爱技术的小牛`} description={`「${name}」系列，共 ${posts.length} 篇文章`}>
+<BaseLayout title={`${name} - 系列 - 热爱技术的小牛`} description={`「${name}」系列，共 ${totalCount} 篇，已更新 ${publishedCount} 篇`}>
   <section class="container-prose py-10">
     <!-- 返回 -->
     <a href={`${base}/series`} class="inline-flex items-center gap-1 text-sm mb-8 link-brand">
@@ -43,45 +73,67 @@ const seriesSlug = encodeURIComponent(name);
         <span>系列专栏</span>
       </div>
       <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">{name}</h1>
-      <p class="mt-2 text-base" style="color: rgb(var(--muted));">共 {posts.length} 篇文章</p>
+      <p class="mt-2 text-base" style="color: rgb(var(--muted));">
+        共 {totalCount} 篇 · 已更新 {publishedCount} 篇
+        {publishedCount < totalCount && <span class="ml-2">· 待更新 {totalCount - publishedCount} 篇</span>}
+      </p>
 
       <!-- 进度条 -->
       <div class="mt-4 flex items-center gap-3">
         <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background-color: rgb(var(--border));">
-          <div class="h-full rounded-full bg-brand-500" style={`width: 100%`}></div>
+          <div class="h-full rounded-full bg-brand-500 transition-all" style={`width: ${progressPercent}%`}></div>
         </div>
-        <span class="text-sm font-medium" style="color: rgb(var(--muted));">{posts.length} / {posts.length}</span>
+        <span class="text-sm font-medium" style="color: rgb(var(--muted));">{publishedCount} / {totalCount}</span>
       </div>
     </header>
 
-    <!-- 文章列表 -->
+    <!-- 文章列表（含待更新占位） -->
     <div class="space-y-3">
-      {posts.map((post, i) => (
-        <a href={`${base}/posts/${post.slug}`} class="series-item block card p-5 hover:border-brand-400 hover:shadow-md transition-all group">
-          <div class="flex items-start gap-4">
-            <!-- 序号 -->
-            <div class="shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold text-sm">
-              {post.data.seriesOrder ?? i + 1}
+      {renderItems.map((item) => (
+        item.published && item.post ? (
+          <a href={`${base}/posts/${item.post.slug}`} class="series-item block card p-5 hover:border-brand-400 hover:shadow-md transition-all group">
+            <div class="flex items-start gap-4">
+              <div class="shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold text-sm">
+                {item.order}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold tracking-tight group-hover:text-brand-600 transition-colors">{item.post.data.title}</h3>
+                <p class="mt-1 text-sm line-clamp-2" style="color: rgb(var(--muted));">{item.post.data.description}</p>
+                <div class="mt-2 flex flex-wrap items-center gap-3 text-xs" style="color: rgb(var(--muted));">
+                  <span><FormattedDate date={item.post.data.pubDate} /></span>
+                  {item.post.data.tags && item.post.data.tags.length > 0 && (
+                    <div class="flex flex-wrap gap-1.5">
+                      {item.post.data.tags.slice(0, 3).map((tag) => (
+                        <span class="tag-chip">#{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <svg class="shrink-0 h-5 w-5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" style="color: rgb(var(--brand));" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
             </div>
-            <!-- 内容 -->
-            <div class="flex-1 min-w-0">
-              <h3 class="font-bold tracking-tight group-hover:text-brand-600 transition-colors">{post.data.title}</h3>
-              <p class="mt-1 text-sm line-clamp-2" style="color: rgb(var(--muted));">{post.data.description}</p>
-              <div class="mt-2 flex flex-wrap items-center gap-3 text-xs" style="color: rgb(var(--muted));">
-                <span><FormattedDate date={post.data.pubDate} /></span>
-                {post.data.tags && post.data.tags.length > 0 && (
-                  <div class="flex flex-wrap gap-1.5">
-                    {post.data.tags.slice(0, 3).map((tag) => (
-                      <span class="tag-chip">#{tag}</span>
-                    ))}
-                  </div>
-                )}
+          </a>
+        ) : (
+          <div class="series-item-pending block p-5 rounded-xl border" style="border-color: rgb(var(--border)); border-style: dashed; opacity: 0.6;">
+            <div class="flex items-start gap-4">
+              <div class="shrink-0 flex items-center justify-center w-9 h-9 rounded-full border-2 border-dashed text-sm font-bold" style="border-color: rgb(var(--border)); color: rgb(var(--muted));">
+                {item.order}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold tracking-tight" style="color: rgb(var(--muted));">
+                  {item.outlineTitle || `第 ${item.order} 篇`}
+                </h3>
+                <p class="mt-1 text-sm flex items-center gap-1.5" style="color: rgb(var(--muted));">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style="background-color: rgb(var(--border)); color: rgb(var(--muted));">
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    待更新
+                  </span>
+                  {item.outlineTitle && <span class="text-xs">大纲计划中</span>}
+                </p>
               </div>
             </div>
-            <!-- 箭头 -->
-            <svg class="shrink-0 h-5 w-5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" style="color: rgb(var(--brand));" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
           </div>
-        </a>
+        )
       ))}
     </div>
   </section>

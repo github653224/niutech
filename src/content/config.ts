@@ -15,6 +15,8 @@ const posts = defineCollection({
     password: z.string().optional(),
     series: z.string().optional(),
     seriesOrder: z.number().optional(),
+    seriesTotal: z.number().optional(),
+    seriesOutline: z.array(z.string()).default([]),
   }),
 });
 
