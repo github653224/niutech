@@ -16,14 +16,35 @@
         <span class="title">发布台</span>
         <button id="theme-toggle" class="theme-toggle" title="切换主题">🌙</button>
       </div>
-      <div class="sidebar-actions">
-        <button id="new-btn" class="new-btn">+ 新建文章</button>
-        <button id="new-folder-btn" class="folder-btn" title="新建文件夹">📁+</button>
+
+      <!-- 标签切换 -->
+      <div class="sidebar-tabs">
+        <button id="tab-posts" class="sidebar-tab active">文章</button>
+        <button id="tab-media" class="sidebar-tab">媒体</button>
       </div>
-      <div class="sidebar-search">
-        <input id="search" placeholder="搜索文章…" />
+
+      <!-- 文章面板 -->
+      <div id="panel-posts" class="sidebar-panel">
+        <div class="sidebar-actions">
+          <button id="new-btn" class="new-btn">+ 新建文章</button>
+          <button id="new-folder-btn" class="folder-btn" title="新建文件夹">📁+</button>
+        </div>
+        <div class="sidebar-search">
+          <input id="search" placeholder="搜索文章…" />
+        </div>
+        <div id="post-list" class="post-list"></div>
       </div>
-      <div id="post-list" class="post-list"></div>
+
+      <!-- 媒体面板 -->
+      <div id="panel-media" class="sidebar-panel" style="display:none;">
+        <div class="sidebar-actions">
+          <button id="upload-btn" class="new-btn">📤 上传文件</button>
+          <input type="file" id="file-input" multiple style="display:none" />
+        </div>
+        <div class="media-hint">拖拽文件到右侧编辑器可自动上传并插入</div>
+        <div id="media-list" class="post-list"></div>
+      </div>
+
       <button id="logout-btn" class="logout-btn">退出登录</button>
     </aside>
 
@@ -61,12 +82,19 @@
       <div id="editor-body" class="editor-body" data-mode="split">
         <div id="edit-pane" class="pane">
           <div class="pane-head">Markdown 编辑</div>
-          <textarea id="body" placeholder="在这里写 Markdown 正文…"></textarea>
+          <textarea id="body" placeholder="在这里写 Markdown 正文…&#10;支持拖入图片/音频/视频文件"></textarea>
         </div>
         <div id="divider" class="divider"></div>
         <div id="preview-pane" class="pane">
           <div class="pane-head">实时预览</div>
           <div id="preview" class="preview"></div>
+        </div>
+      </div>
+
+      <div id="upload-overlay" class="upload-overlay">
+        <div class="upload-overlay-inner">
+          <div class="upload-icon">📥</div>
+          <p>松手上传文件到媒体库并插入文章</p>
         </div>
       </div>
 

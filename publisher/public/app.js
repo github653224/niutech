@@ -4,6 +4,7 @@ let originalSlug = null;
 let allPosts = [];
 let folders = [];
 let draggingSlug = null;
+let allMedia = { images: [], audio: [], video: [] };
 
 const THEME_KEY = 'publisher-theme';
 const FOLDERS_KEY = 'publisher-folders';
@@ -36,11 +37,12 @@ async function checkAuth() {
   return true;
 }
 
+// ==================== 文章管理 ====================
+
 async function loadList() {
   const r = await fetch('/api/posts', { cache: 'no-store' });
   const data = await r.json();
   allPosts = data.posts || [];
-  // 如果当前正在编辑的文章被拖动改变了分类，同步右侧编辑器的 category 字段
   if (currentSlug) {
     const cur = allPosts.find((p) => p.slug === currentSlug);
     if (cur) {
@@ -64,16 +66,12 @@ function renderList() {
   if (q) posts = posts.filter((p) => (p.title || '').toLowerCase().includes(q));
 
   list.innerHTML = '';
-
-  // 按文件夹分组（修复：只 push 一次）
   const folderMap = {};
   posts.forEach((p) => {
     const key = p.category || '未分类';
     if (!folderMap[key]) folderMap[key] = [];
     folderMap[key].push(p);
   });
-
-  // 包含空文件夹
   getEffectiveFolders().forEach((f) => { if (!folderMap[f]) folderMap[f] = []; });
   if (!folderMap['未分类']) folderMap['未分类'] = [];
 
@@ -90,7 +88,6 @@ function renderList() {
 
   folderNames.forEach((folder) => {
     const items = folderMap[folder] || [];
-    // 置顶排前
     items.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
     const isUncat = folder === '未分类';
     const group = document.createElement('div');
@@ -110,10 +107,7 @@ function renderList() {
       if (e.target.closest('.folder-action')) return;
       group.classList.toggle('collapsed');
     });
-    head.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      head.classList.add('drag-over');
-    });
+    head.addEventListener('dragover', (e) => { e.preventDefault(); head.classList.add('drag-over'); });
     head.addEventListener('dragleave', () => head.classList.remove('drag-over'));
     head.addEventListener('drop', async (e) => {
       e.preventDefault();
@@ -143,26 +137,14 @@ function renderList() {
         item.dataset.slug = p.slug;
         item.innerHTML =
           '<span class="pin-icon" title="' + (p.pinned ? '取消置顶' : '置顶') + '">' + (p.pinned ? '📌' : '📍') + '</span>' +
-          '<div class="pi-body">' +
-            '<div class="pi-title">' + escapeHtml(p.title) + '</div>' +
-            '<div class="pi-date">' + (p.pubDate ? String(p.pubDate).slice(0, 10) : '') + '</div>' +
-          '</div>';
+          '<div class="pi-body"><div class="pi-title">' + escapeHtml(p.title) + '</div>' +
+          '<div class="pi-date">' + (p.pubDate ? String(p.pubDate).slice(0, 10) : '') + '</div></div>';
         item.addEventListener('click', (e) => {
-          if (e.target.classList.contains('pin-icon')) {
-            e.stopPropagation();
-            togglePin(p.slug, !p.pinned);
-            return;
-          }
+          if (e.target.classList.contains('pin-icon')) { e.stopPropagation(); togglePin(p.slug, !p.pinned); return; }
           loadPost(p.slug);
         });
-        item.addEventListener('dragstart', (e) => {
-          draggingSlug = p.slug;
-          item.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-        });
-        item.addEventListener('dragend', () => {
-          item.classList.remove('dragging');
-        });
+        item.addEventListener('dragstart', (e) => { draggingSlug = p.slug; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+        item.addEventListener('dragend', () => item.classList.remove('dragging'));
         itemsEl.appendChild(item);
       });
     }
@@ -175,38 +157,18 @@ function renderList() {
 async function setCategory(slug, category) {
   showStatus('正在移动到「' + (category || '未分类') + '」…', 'info');
   try {
-    const r = await fetch('/api/set-category', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, category }),
-    });
-    if (r.ok) {
-      await loadList();
-      showStatus('已移动到「' + (category || '未分类') + '」', 'success');
-    } else {
-      showStatus('移动失败', 'error');
-    }
-  } catch (e) {
-    showStatus('网络错误：' + e.message, 'error');
-  }
+    const r = await fetch('/api/set-category', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, category }) });
+    if (r.ok) { await loadList(); showStatus('已移动到「' + (category || '未分类') + '」', 'success'); }
+    else showStatus('移动失败', 'error');
+  } catch (e) { showStatus('网络错误：' + e.message, 'error'); }
 }
 
 async function togglePin(slug, pinned) {
   try {
-    const r = await fetch('/api/set-pin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, pinned }),
-    });
-    if (r.ok) {
-      await loadList();
-      showStatus(pinned ? '已置顶' : '已取消置顶', 'success');
-    } else {
-      showStatus('操作失败', 'error');
-    }
-  } catch (e) {
-    showStatus('网络错误：' + e.message, 'error');
-  }
+    const r = await fetch('/api/set-pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, pinned }) });
+    if (r.ok) { await loadList(); showStatus(pinned ? '已置顶' : '已取消置顶', 'success'); }
+    else showStatus('操作失败', 'error');
+  } catch (e) { showStatus('网络错误：' + e.message, 'error'); }
 }
 
 async function loadPost(slug) {
@@ -253,17 +215,12 @@ async function publish() {
   showStatus('正在写入并推送到 GitHub…', 'info');
   try {
     const r = await fetch('/api/publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title,
-        description: document.getElementById('description').value.trim(),
-        tags: document.getElementById('tags').value,
-        pubDate: document.getElementById('pubDate').value,
-        body,
-        slug: document.getElementById('slug').value.trim() || undefined,
-        originalSlug,
-        category: document.getElementById('category').value.trim(),
+        title, description: document.getElementById('description').value.trim(),
+        tags: document.getElementById('tags').value, pubDate: document.getElementById('pubDate').value,
+        body, slug: document.getElementById('slug').value.trim() || undefined,
+        originalSlug, category: document.getElementById('category').value.trim(),
         pinned: document.getElementById('pin-toggle').checked,
       }),
     });
@@ -281,6 +238,233 @@ async function publish() {
   } catch (e) { showStatus('网络错误：' + e.message, 'error'); }
   finally { btn.disabled = false; btn.textContent = '发布到 GitHub'; }
 }
+
+// ==================== 媒体管理 ====================
+
+async function loadMedia() {
+  const r = await fetch('/api/media', { cache: 'no-store' });
+  const data = await r.json();
+  allMedia = data.media || { images: [], audio: [], video: [] };
+  renderMedia();
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function getMediaIcon(type) {
+  return { images: '🖼️', audio: '🎵', video: '🎬' }[type] || '📄';
+}
+
+function getMediaTypeFromMime(mime) {
+  if (mime.startsWith('image/')) return 'images';
+  if (mime.startsWith('audio/')) return 'audio';
+  if (mime.startsWith('video/')) return 'video';
+  return null;
+}
+
+function renderMedia() {
+  const list = document.getElementById('media-list');
+  list.innerHTML = '';
+  const types = [
+    { key: 'images', label: 'Images 图片', icon: '🖼️' },
+    { key: 'audio', label: 'Audio 音频', icon: '🎵' },
+    { key: 'video', label: 'Video 视频', icon: '🎬' },
+  ];
+
+  types.forEach(({ key, label, icon }) => {
+    const items = allMedia[key] || [];
+    const group = document.createElement('div');
+    group.className = 'media-group';
+    const head = document.createElement('div');
+    head.className = 'media-group-head';
+    head.innerHTML =
+      '<span class="arrow">▼</span>' +
+      '<span class="folder-icon">' + icon + '</span>' +
+      '<span class="name">' + escapeHtml(label) + '</span>' +
+      '<span class="count">' + items.length + '</span>';
+    head.addEventListener('click', () => group.classList.toggle('collapsed'));
+
+    const itemsEl = document.createElement('div');
+    itemsEl.className = 'media-items';
+
+    if (!items.length) {
+      itemsEl.innerHTML = '<p class="empty-sub">空</p>';
+    } else {
+      items.forEach((m) => {
+        const item = document.createElement('div');
+        item.className = 'media-item';
+        item.draggable = true;
+        item.dataset.path = '../../media/' + key + '/' + m.name;
+        item.dataset.type = key;
+
+        let thumbHtml;
+        if (key === 'images') {
+          thumbHtml = '<img class="media-thumb" src="/media/' + key + '/' + encodeURIComponent(m.name) + '" alt="" loading="lazy">';
+        } else {
+          thumbHtml = '<div class="media-thumb-icon">' + getMediaIcon(key) + '</div>';
+        }
+
+        item.innerHTML =
+          thumbHtml +
+          '<div class="media-info"><div class="media-name">' + escapeHtml(m.name) + '</div>' +
+          '<div class="media-size">' + formatSize(m.size) + '</div></div>' +
+          '<button class="media-del" title="删除">✕</button>';
+
+        // 拖拽到编辑器
+        item.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/media-path', '../../media/' + key + '/' + m.name);
+          e.dataTransfer.setData('text/media-type', key);
+          e.dataTransfer.effectAllowed = 'copy';
+        });
+
+        // 点击插入到光标位置
+        item.addEventListener('click', () => {
+          insertMediaToEditor(key, '../../media/' + key + '/' + m.name, m.name);
+        });
+
+        // 删除
+        item.querySelector('.media-del').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('删除「' + m.name + '」？')) return;
+          try {
+            const r = await fetch('/api/delete-media', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: key, name: m.name }) });
+            if (r.ok) { loadMedia(); showStatus('已删除 ' + m.name, 'success'); }
+          } catch (e) { showStatus('删除失败', 'error'); }
+        });
+
+        itemsEl.appendChild(item);
+      });
+    }
+    group.appendChild(head);
+    group.appendChild(itemsEl);
+    list.appendChild(group);
+  });
+}
+
+// 上传文件
+async function uploadFile(file) {
+  const mediaType = getMediaTypeFromMime(file.type);
+  if (!mediaType) {
+    showStatus('不支持的文件类型: ' + file.type + '（仅支持图片/音频/视频）', 'error');
+    return null;
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const r = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: file.name, type: mediaType, data: reader.result }),
+        });
+        const data = await r.json();
+        if (r.ok && data.ok) {
+          resolve({ path: data.path, type: mediaType, name: data.name });
+        } else {
+          showStatus('上传失败: ' + (data.error || '未知错误'), 'error');
+          reject(new Error(data.error));
+        }
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = () => reject(new Error('文件读取失败'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// 在编辑器光标处插入媒体 Markdown
+function insertMediaToEditor(type, mediaPath, name) {
+  const textarea = document.getElementById('body');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const before = textarea.value.substring(0, start);
+  const after = textarea.value.substring(end);
+
+  let insert;
+  if (type === 'images') {
+    insert = `![${name}](${mediaPath})\n`;
+  } else if (type === 'audio') {
+    insert = `<audio src="${mediaPath}" controls></audio>\n`;
+  } else if (type === 'video') {
+    insert = `<video src="${mediaPath}" controls></video>\n`;
+  } else {
+    insert = `[${name}](${mediaPath})\n`;
+  }
+
+  textarea.value = before + insert + after;
+  const newPos = start + insert.length;
+  textarea.selectionStart = textarea.selectionEnd = newPos;
+  textarea.focus();
+  updatePreview();
+}
+
+// ==================== 拖拽上传到编辑器 ====================
+
+function initEditorDropZone() {
+  const editorBody = document.getElementById('editor-body');
+  const overlay = document.getElementById('upload-overlay');
+  let dragCounter = 0;
+
+  editorBody.addEventListener('dragenter', (e) => {
+    if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      dragCounter++;
+      overlay.classList.add('active');
+    }
+  });
+  editorBody.addEventListener('dragover', (e) => {
+    if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  });
+  editorBody.addEventListener('dragleave', () => {
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      overlay.classList.remove('active');
+    }
+  });
+  editorBody.addEventListener('drop', async (e) => {
+    // 处理从文件系统拖入的文件
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      e.preventDefault();
+      dragCounter = 0;
+      overlay.classList.remove('active');
+
+      const files = Array.from(e.dataTransfer.files);
+      showStatus('正在上传 ' + files.length + ' 个文件…', 'info');
+
+      for (const file of files) {
+        try {
+          const result = await uploadFile(file);
+          if (result) {
+            insertMediaToEditor(result.type, result.path, result.name);
+          }
+        } catch (e) {
+          // 错误已在 uploadFile 中提示
+        }
+      }
+      await loadMedia();
+      showStatus('上传完成', 'success');
+    }
+    // 处理从媒体面板拖入的已有文件
+    else if (e.dataTransfer && e.dataTransfer.getData('text/media-path')) {
+      e.preventDefault();
+      const mediaPath = e.dataTransfer.getData('text/media-path');
+      const mediaType = e.dataTransfer.getData('text/media-type');
+      const name = mediaPath.split('/').pop();
+      insertMediaToEditor(mediaType, mediaPath, name);
+    }
+  });
+}
+
+// ==================== 辅助函数 ====================
 
 function showStatus(msg, type) {
   const el = document.getElementById('status');
@@ -336,6 +520,8 @@ async function deleteFolder(name, items) {
 function setViewMode(mode) {
   document.getElementById('editor-body').dataset.mode = mode;
   document.querySelectorAll('.view-switch button').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+  // 切换到预览模式时刷新预览内容
+  if (mode === 'preview' || mode === 'split') updatePreview();
 }
 
 function initDivider() {
@@ -356,6 +542,14 @@ function initDivider() {
   document.addEventListener('touchend', () => { if (dragging) { dragging = false; divider.classList.remove('dragging'); } });
 }
 
+// 标签切换
+function switchTab(tab) {
+  document.querySelectorAll('.sidebar-tab').forEach((b) => b.classList.toggle('active', b.id === 'tab-' + tab));
+  document.getElementById('panel-posts').style.display = tab === 'posts' ? '' : 'none';
+  document.getElementById('panel-media').style.display = tab === 'media' ? '' : 'none';
+  if (tab === 'media') loadMedia();
+}
+
 (async () => {
   if (!(await checkAuth())) return;
   loadFolders();
@@ -367,7 +561,25 @@ function initDivider() {
   document.getElementById('search').addEventListener('input', renderList);
   document.getElementById('body').addEventListener('input', updatePreview);
   document.querySelectorAll('.view-switch button').forEach((b) => b.onclick = () => setViewMode(b.dataset.mode));
+  document.getElementById('tab-posts').onclick = () => switchTab('posts');
+  document.getElementById('tab-media').onclick = () => switchTab('media');
+
+  // 上传按钮
+  document.getElementById('upload-btn').onclick = () => document.getElementById('file-input').click();
+  document.getElementById('file-input').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    showStatus('正在上传 ' + files.length + ' 个文件…', 'info');
+    for (const file of files) {
+      try { await uploadFile(file); } catch (e) {}
+    }
+    await loadMedia();
+    showStatus('上传完成', 'success');
+    e.target.value = '';
+  });
+
   initDivider();
+  initEditorDropZone();
   await loadList();
   newPost();
 })();

@@ -12,15 +12,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 const ROOT = path.resolve(__dirname, '..');
 const POSTS_DIR = path.join(ROOT, 'src', 'content', 'posts');
+const MEDIA_DIR = path.join(ROOT, 'public', 'media');
 
 if (!fs.existsSync(POSTS_DIR)) fs.mkdirSync(POSTS_DIR, { recursive: true });
+['audio', 'video', 'images'].forEach((t) => {
+  const d = path.join(MEDIA_DIR, t);
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+});
 
 const PORT = process.env.PUBLISHER_PORT || 4399;
 const PASSWORD = process.env.PUBLISHER_PASSWORD || 'admin123';
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomUUID();
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
 app.use(
   session({
     secret: SESSION_SECRET,
@@ -31,6 +36,9 @@ app.use(
 );
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// 静态服务媒体文件（供编辑器预览用）
+app.use('/media', express.static(MEDIA_DIR));
 
 // 所有 /api 响应禁用缓存，确保前端拖拽/置顶后拿到最新数据
 app.use('/api', (req, res, next) => {
@@ -203,7 +211,94 @@ app.post('/api/set-pin', auth, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`\n  发布服务已启动: http://localhost:${PORT}`);
   console.log(`  登录密码: ${PASSWORD === 'admin123' ? 'admin123（默认，请修改 .env）' : '已自定义'}`);
-  console.log(`  文章目录: ${POSTS_DIR}\n`);
+  console.log(`  文章目录: ${POSTS_DIR}`);
+  console.log(`  媒体目录: ${MEDIA_DIR}\n`);
+});
+
+// ---------- 媒体管理 API ----------
+
+// 列出媒体文件
+app.get('/api/media', auth, (req, res) => {
+  const types = ['images', 'audio', 'video'];
+  const result = {};
+  types.forEach((t) => {
+    const dir = path.join(MEDIA_DIR, t);
+    if (!fs.existsSync(dir)) { result[t] = []; return; }
+    const files = fs.readdirSync(dir).filter((f) => !f.startsWith('.'));
+    result[t] = files.map((f) => {
+      const stat = fs.statSync(path.join(dir, f));
+      return { name: f, type: t, size: stat.size, mtime: stat.mtime };
+    }).sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+  });
+  res.json({ media: result });
+});
+
+// 上传媒体文件（base64）
+app.post('/api/upload', auth, async (req, res) => {
+  try {
+    const { name, type, data } = req.body;
+    if (!name || !data) return res.status(400).json({ error: '缺少文件名或数据' });
+
+    // 根据 mimeType 判断目录
+    let mediaType = type;
+    if (!['images', 'audio', 'video'].includes(mediaType)) {
+      return res.status(400).json({ error: '不支持的文件类型: ' + type });
+    }
+
+    // 安全文件名
+    const safeName = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const dir = path.join(MEDIA_DIR, mediaType);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    // 处理重名
+    let finalName = safeName;
+    let filepath = path.join(dir, finalName);
+    let counter = 1;
+    while (fs.existsSync(filepath)) {
+      const ext = path.extname(safeName);
+      const base = path.basename(safeName, ext);
+      finalName = `${base}-${counter}${ext}`;
+      filepath = path.join(dir, finalName);
+      counter++;
+    }
+
+    // 写入文件（去掉 base64 前缀）
+    const base64Data = data.replace(/^data:[^;]+;base64,/, '');
+    fs.writeFileSync(filepath, Buffer.from(base64Data, 'base64'));
+
+    // git 提交
+    const git = simpleGit(ROOT);
+    await git.add('.');
+    await git.commit(`media: upload ${finalName}`);
+    try { await git.push(); } catch (e) {}
+
+    // 返回相对路径（用于 Markdown 引用）
+    // 博客文章在 /niutech/posts/slug/ 下，媒体在 /niutech/media/type/ 下
+    // 相对路径为 ../../media/type/name
+    const mediaPath = `../../media/${mediaType}/${finalName}`;
+    res.json({ ok: true, name: finalName, type: mediaType, path: mediaPath });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 删除媒体文件
+app.post('/api/delete-media', auth, async (req, res) => {
+  try {
+    const { type, name } = req.body;
+    if (!['images', 'audio', 'video'].includes(type)) return res.status(400).json({ error: '无效类型' });
+    const filepath = path.join(MEDIA_DIR, type, name);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+      const git = simpleGit(ROOT);
+      await git.add('.');
+      await git.commit(`media: delete ${type}/${name}`);
+      try { await git.push(); } catch (e) {}
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ---------- 辅助函数 ----------
