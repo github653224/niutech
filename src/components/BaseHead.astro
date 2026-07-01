@@ -9,6 +9,7 @@ interface Props {
 
 const { title = SITE_TITLE, description = SITE_DESCRIPTION } = Astro.props;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <meta charset="utf-8" />
@@ -33,5 +34,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     if (stored === 'dark' || (!stored && prefersDark)) {
       document.documentElement.classList.add('dark');
     }
+    // 暴露 base 路径给内联脚本使用
+    document.documentElement.dataset.base = import.meta.env.BASE_URL.replace(/\/$/, '');
   })();
 </script>
