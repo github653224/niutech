@@ -74,6 +74,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     buildToc(tocNav);
     // 移动端目录
     buildToc(tocMobileNav, closeTocMobile);
+    // 目录按钮始终显示（不依赖滚动）
+    tocMobileToggle.classList.add('show');
   } else {
     tocAside.style.display = 'none';
     tocMobileToggle.style.display = 'none';
