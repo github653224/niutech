@@ -6,7 +6,7 @@ tags:
   - "AI 测试"
   - "测试开发"
 category: "AI 测试开发"
-series: "AI 测试提效实战"
+series: "AI测试提效工具开发方向"
 seriesOrder: 1
 draft: false
 ---
