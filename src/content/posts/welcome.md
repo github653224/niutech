@@ -7,6 +7,7 @@ tags:
   - "公告"
 category: "公众号文章"
 pinned: true
+password: "123456"
 draft: false
 ---
 
