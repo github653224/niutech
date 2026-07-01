@@ -27,7 +27,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 <meta property="og:url" content={canonicalURL} />
 
 <!-- 防主题闪烁：在页面渲染前应用保存的主题 -->
-<script is:inline>
+<script is:inline define:vars={{ base }}>
   (function () {
     const stored = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -35,6 +35,6 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       document.documentElement.classList.add('dark');
     }
     // 暴露 base 路径给内联脚本使用
-    document.documentElement.dataset.base = import.meta.env.BASE_URL.replace(/\/$/, '');
+    document.documentElement.dataset.base = base;
   })();
 </script>

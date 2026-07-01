@@ -49,8 +49,46 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
       <h2>联系方式</h2>
       <ul>
-        <li>GitHub：<a href={AUTHOR.social.github} target="_blank" rel="noopener">@yourusername</a></li>
+        <li>GitHub：<a href={AUTHOR.social.github} target="_blank" rel="noopener">@github653224</a></li>
+        <li>邮箱：<a href="mailto:944851899@qq.com">944851899@qq.com</a></li>
       </ul>
+
+      <!-- 二维码 -->
+      <div class="about-qr-section">
+        <div class="about-qr-card">
+          <img src={`${base}/media/images/wechat-qrcode.jpg`} alt="微信公众号" loading="lazy" />
+          <span>微信公众号</span>
+        </div>
+        <div class="about-qr-card">
+          <img src={`${base}/media/images/video-qrcode.jpg`} alt="视频号" loading="lazy" />
+          <span>视频号</span>
+        </div>
+      </div>
     </div>
   </section>
 </BaseLayout>
+
+<style is:global>
+  .about-qr-section {
+    display: flex;
+    gap: 32px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .about-qr-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .about-qr-card img {
+    width: 160px;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid rgb(var(--border));
+  }
+  .about-qr-card span {
+    font-size: 14px;
+    color: rgb(var(--muted));
+  }
+</style>
