@@ -37,9 +37,17 @@ async function checkAuth() {
 }
 
 async function loadList() {
-  const r = await fetch('/api/posts');
+  const r = await fetch('/api/posts', { cache: 'no-store' });
   const data = await r.json();
   allPosts = data.posts || [];
+  // 如果当前正在编辑的文章被拖动改变了分类，同步右侧编辑器的 category 字段
+  if (currentSlug) {
+    const cur = allPosts.find((p) => p.slug === currentSlug);
+    if (cur) {
+      document.getElementById('category').value = cur.category || '';
+      document.getElementById('pin-toggle').checked = !!cur.pinned;
+    }
+  }
   updateCategoryDatalist();
   renderList();
 }

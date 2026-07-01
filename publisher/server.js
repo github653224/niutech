@@ -32,6 +32,14 @@ app.use(
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 所有 /api 响应禁用缓存，确保前端拖拽/置顶后拿到最新数据
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 app.get('/', (req, res) => {
   if (req.session && req.session.user) return res.redirect('/editor.html');
   res.redirect('/login.html');
