@@ -1,5 +1,4 @@
 // 本地发布服务：登录后用 Markdown 编辑器写文章，一键 commit + push 到 GitHub
-// 用法：npm run publisher  （或在 .env 配置密码后启动）
 import express from 'express';
 import session from 'express-session';
 import simpleGit from 'simple-git';
@@ -33,7 +32,6 @@ app.use(
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 根路由：已登录跳编辑器，未登录跳登录页
 app.get('/', (req, res) => {
   if (req.session && req.session.user) return res.redirect('/editor.html');
   res.redirect('/login.html');
@@ -86,7 +84,7 @@ app.get('/api/posts/:slug', auth, (req, res) => {
 // 发布 / 更新
 app.post('/api/publish', auth, async (req, res) => {
   try {
-    const { title, description, tags, pubDate, body, slug: customSlug, originalSlug } = req.body;
+    const { title, description, tags, pubDate, body, slug: customSlug, originalSlug, category } = req.body;
     if (!title || !body) return res.status(400).json({ error: '标题和正文不能为空' });
 
     const date = pubDate || new Date().toISOString().slice(0, 10);
@@ -94,17 +92,13 @@ app.post('/api/publish', auth, async (req, res) => {
     const filename = `${slug}.md`;
     const filepath = path.join(POSTS_DIR, filename);
 
-    // slug 变更则删除旧文件
     if (originalSlug && originalSlug !== slug) {
       const oldFile = path.join(POSTS_DIR, `${originalSlug}.md`);
       if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
     }
 
-    const tagsArray = (tags || '')
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const fm = buildFrontmatter({ title, description, tags: tagsArray, pubDate: date });
+    const tagsArray = parseTagsInput(tags);
+    const fm = buildFrontmatter({ title, description, tags: tagsArray, pubDate: date, category });
     fs.writeFileSync(filepath, fm + body.trim() + '\n', 'utf-8');
 
     const git = simpleGit(ROOT);
@@ -154,6 +148,27 @@ app.post('/api/delete', auth, async (req, res) => {
   }
 });
 
+// 批量更新分类（拖拽改文件夹时用）
+app.post('/api/set-category', auth, async (req, res) => {
+  try {
+    const { slug, category } = req.body;
+    const file = path.join(POSTS_DIR, `${slug}.md`);
+    if (!fs.existsSync(file)) return res.status(404).json({ error: '不存在' });
+    const content = fs.readFileSync(file, 'utf-8');
+    const { data, body } = parseFrontmatter(content);
+    data.category = category || '';
+    const fm = buildFrontmatter({ ...data, tags: data.tags || [] });
+    fs.writeFileSync(file, fm + body.trim() + '\n', 'utf-8');
+    const git = simpleGit(ROOT);
+    await git.add('.');
+    await git.commit(`category: ${slug} -> ${category || '未分类'}`);
+    try { await git.push(); } catch (e) {}
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`\n  发布服务已启动: http://localhost:${PORT}`);
   console.log(`  登录密码: ${PASSWORD === 'admin123' ? 'admin123（默认，请修改 .env）' : '已自定义'}`);
@@ -161,47 +176,88 @@ app.listen(PORT, () => {
 });
 
 // ---------- 辅助函数 ----------
+// 健壮的 frontmatter 解析：支持多行数组、行内数组、字符串
 function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!match) return { data: {}, body: content };
   const fmStr = match[1];
   const body = match[2];
   const data = {};
-  const lines = fmStr.split('\n');
+  const lines = fmStr.split(/\r?\n/);
   let currentArray = null;
   for (const line of lines) {
-    if (line.startsWith('  - ')) {
-      if (currentArray) currentArray.push(line.slice(4).replace(/^['"]|['"]$/g, ''));
+    // 多行数组项: "  - 'value'" 或 "  - value"
+    const arrMatch = line.match(/^\s+-\s+(.*)$/);
+    if (arrMatch && currentArray) {
+      currentArray.push(stripQuotes(arrMatch[1]));
       continue;
     }
     const m = line.match(/^(\w+):\s*(.*)$/);
     if (m) {
       currentArray = null;
       const key = m[1];
-      let val = m[2].replace(/^['"]|['"]$/g, '');
+      let val = m[2].trim();
       if (val === '') {
+        // 空值，可能下面是多行数组
         currentArray = [];
         data[key] = currentArray;
+      } else if (val === '[]') {
+        // 空行内数组
+        data[key] = [];
+      } else if (val.startsWith('[') && val.endsWith(']')) {
+        // 行内数组: ['a', 'b'] 或 ["a", "b"]
+        const inner = val.slice(1, -1).trim();
+        if (inner) {
+          data[key] = inner.split(',').map((s) => stripQuotes(s.trim())).filter((s) => s !== '');
+        } else {
+          data[key] = [];
+        }
       } else if (key === 'draft') {
         data[key] = val === 'true';
       } else {
-        data[key] = val;
+        data[key] = stripQuotes(val);
       }
     }
   }
+  // 规范化 tags 为数组
+  if (data.tags && !Array.isArray(data.tags)) {
+    data.tags = [String(data.tags)];
+  }
+  if (!data.tags) data.tags = [];
   return { data, body };
 }
 
-function buildFrontmatter({ title, description, tags, pubDate }) {
+function stripQuotes(s) {
+  s = s.trim();
+  if ((s.startsWith("'") && s.endsWith("'")) || (s.startsWith('"') && s.endsWith('"'))) {
+    return s.slice(1, -1);
+  }
+  return s;
+}
+
+// 把用户输入的标签字符串解析成数组
+function parseTagsInput(tags) {
+  if (Array.isArray(tags)) return tags;
+  if (!tags) return [];
+  return String(tags)
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+function buildFrontmatter({ title, description, tags, pubDate, category }) {
   let fm = '---\n';
-  fm += `title: ${JSON.stringify(title)}\n`;
+  fm += `title: ${JSON.stringify(title || '')}\n`;
   fm += `description: ${JSON.stringify(description || '')}\n`;
-  fm += `pubDate: ${pubDate}\n`;
+  fm += `pubDate: ${pubDate || new Date().toISOString().slice(0, 10)}\n`;
   if (tags && tags.length) {
     fm += 'tags:\n';
     tags.forEach((t) => (fm += `  - ${JSON.stringify(t)}\n`));
   } else {
     fm += 'tags: []\n';
+  }
+  if (category) {
+    fm += `category: ${JSON.stringify(category)}\n`;
   }
   fm += 'draft: false\n';
   fm += '---\n\n';

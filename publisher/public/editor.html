@@ -7,15 +7,22 @@
   <link rel="stylesheet" href="/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body>
+<body class="theme-dark">
   <div class="app">
     <!-- 侧边栏 -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <span class="logo">牛</span>
         <span class="title">发布台</span>
+        <button id="theme-toggle" class="theme-toggle" title="切换主题">🌙</button>
       </div>
-      <button id="new-btn" class="new-btn">+ 新建文章</button>
+      <div class="sidebar-actions">
+        <button id="new-btn" class="new-btn">+ 新建文章</button>
+        <button id="new-folder-btn" class="folder-btn" title="新建文件夹">📁+</button>
+      </div>
+      <div class="sidebar-search">
+        <input id="search" placeholder="搜索文章…" />
+      </div>
       <div id="post-list" class="post-list"></div>
       <button id="logout-btn" class="logout-btn">退出登录</button>
     </aside>
@@ -24,12 +31,21 @@
     <main class="editor">
       <div class="toolbar">
         <input id="title" placeholder="文章标题" class="title-input" />
+        <div class="view-switch">
+          <button data-mode="split" class="active" title="分栏">⫶</button>
+          <button data-mode="edit" title="纯编辑">✎</button>
+          <button data-mode="preview" title="纯预览">👁</button>
+        </div>
         <button id="publish-btn" class="publish-btn">发布到 GitHub</button>
       </div>
 
       <div class="meta-row">
-        <input id="slug" placeholder="URL 标识（留空自动生成）" class="meta-input" />
+        <input id="category" placeholder="文件夹（留空为未分类）" class="meta-input" list="category-list" />
+        <datalist id="category-list"></datalist>
         <input id="pubDate" type="date" class="meta-input date" />
+      </div>
+      <div class="meta-row">
+        <input id="slug" placeholder="URL 标识（留空自动生成）" class="meta-input" />
       </div>
       <div class="meta-row">
         <input id="description" placeholder="一句话描述（用于列表和 SEO）" class="meta-input" />
@@ -38,12 +54,13 @@
         <input id="tags" placeholder="标签，逗号分隔，如：测试提效,AI 提效" class="meta-input" />
       </div>
 
-      <div class="editor-body">
-        <div class="pane">
+      <div id="editor-body" class="editor-body" data-mode="split">
+        <div id="edit-pane" class="pane">
           <div class="pane-head">Markdown 编辑</div>
           <textarea id="body" placeholder="在这里写 Markdown 正文…"></textarea>
         </div>
-        <div class="pane">
+        <div id="divider" class="divider"></div>
+        <div id="preview-pane" class="pane">
           <div class="pane-head">实时预览</div>
           <div id="preview" class="preview"></div>
         </div>
