@@ -1,18 +1,68 @@
 ---
-import { SITE_TITLE, AUTHOR } from '../consts';
-const year = new Date().getFullYear();
+// 公共底部组件 — 公众号 + 视频号二维码
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
-<footer class="mt-20 border-t" style="border-color: rgb(var(--border));">
-  <div class="container-wide py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-    <p class="text-sm" style="color: rgb(var(--muted));">
-      © {year} {SITE_TITLE} · 用 Astro 构建
-    </p>
-    <div class="flex items-center gap-4 text-sm">
-      <a href={AUTHOR.social.github} target="_blank" rel="noopener" class="link-brand inline-flex items-center gap-1.5">
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.21 3.44 9.63 8.21 11.19.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.05-3.34.72-4.04-1.59-4.04-1.59-.55-1.38-1.34-1.75-1.34-1.75-1.09-.74.08-.73.08-.73 1.21.08 1.84 1.23 1.84 1.23 1.07 1.8 2.81 1.28 3.5.98.11-.76.42-1.28.76-1.58-2.67-.3-5.47-1.31-5.47-5.84 0-1.29.47-2.34 1.23-3.17-.12-.3-.53-1.51.12-3.15 0 0 1-.32 3.3 1.21.96-.26 1.98-.39 3-.4 1.02.01 2.04.14 3 .4 2.28-1.53 3.28-1.21 3.28-1.21.65 1.64.24 2.85.12 3.15.77.83 1.23 1.88 1.23 3.17 0 4.54-2.81 5.53-5.49 5.83.43.36.81 1.08.81 2.18 0 1.58-.01 2.85-.01 3.24 0 .32.22.7.83.58C20.57 21.91 24 17.5 24 12.29 24 5.78 18.63.5 12 .5z" /></svg>
-        GitHub
-      </a>
-    </div>
+<footer class="site-footer">
+  <div class="footer-qr-group">
+    <!-- 公众号 -->
+    <a class="footer-qr-item" href="javascript:void(0)" title="关注微信公众号">
+      <img src={`${base}/media/images/wechat-qrcode.jpg`} alt="微信公众号" loading="lazy" />
+      <span class="footer-qr-label">公众号</span>
+    </a>
+    <!-- 视频号 -->
+    <a class="footer-qr-item" href="javascript:void(0)" title="关注视频号">
+      <img src={`${base}/media/images/video-qrcode.jpg`} alt="视频号" loading="lazy" />
+      <span class="footer-qr-label">视频号</span>
+    </a>
   </div>
+  <p class="footer-copy">&copy; {new Date().getFullYear()} 热爱技术的小牛 · 用心记录技术成长</p>
 </footer>
+
+<style is:global>
+  .site-footer {
+    border-top: 1px solid rgb(var(--border));
+    background: rgb(var(--card));
+    padding: 24px 20px;
+    text-align: center;
+  }
+  .footer-qr-group {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+  .footer-qr-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: transform 0.2s;
+  }
+  .footer-qr-item:hover {
+    transform: translateY(-4px);
+  }
+  .footer-qr-item img {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    border: 1px solid rgb(var(--border));
+    object-fit: cover;
+  }
+  .footer-qr-label {
+    font-size: 12px;
+    color: rgb(var(--muted));
+  }
+  .footer-copy {
+    font-size: 12px;
+    color: rgb(var(--muted));
+    opacity: 0.7;
+    margin: 0;
+  }
+
+  @media (max-width: 480px) {
+    .footer-qr-group { gap: 16px; }
+    .footer-qr-item img { width: 80px; height: 80px; }
+  }
+</style>

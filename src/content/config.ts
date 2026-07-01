@@ -12,6 +12,7 @@ const posts = defineCollection({
     pinned: z.boolean().default(false),
     draft: z.boolean().default(false),
     cover: z.string().optional(),
+    password: z.string().optional(),
   }),
 });
 
