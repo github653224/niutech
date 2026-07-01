@@ -35,22 +35,55 @@ const isActive = (href: string) => {
       }
       <ThemeToggle />
       <SearchDialog />
+      <!-- 移动端汉堡菜单按钮 -->
+      <button id="mobile-menu-toggle" class="sm:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg" style="color: rgb(var(--muted));" aria-label="菜单">
+        <svg id="menu-icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg id="menu-icon-close" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </nav>
   </div>
 
-  <!-- 移动端导航 -->
-  <nav class="sm:hidden flex items-center justify-around border-t px-2 py-1" style="border-color: rgb(var(--border));">
-    {
-      NAV_LINKS.map((link) => (
-        <a
-          href={`${base}${link.href === '/' ? '/' : link.href}`}
-          class={`flex-1 text-center py-2 rounded-lg text-sm font-medium ${
-            isActive(link.href) ? 'text-brand-600 dark:text-brand-400' : ''
-          }`}
-        >
-          {link.label}
-        </a>
-      ))
-    }
-  </nav>
+  <!-- 移动端折叠菜单 -->
+  <div id="mobile-menu" class="sm:hidden hidden border-t" style="border-color: rgb(var(--border));">
+    <nav class="container-wide py-3 flex flex-col gap-1">
+      {
+        NAV_LINKS.map((link) => (
+          <a
+            href={`${base}${link.href === '/' ? '/' : link.href}`}
+            class={`px-3 py-2.5 rounded-lg text-sm font-medium ${
+              isActive(link.href)
+                ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20'
+                : 'hover:bg-brand-50 dark:hover:bg-brand-900/10'
+            }`}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
 </header>
+
+<script is:inline>
+  (function() {
+    const toggle = document.getElementById('mobile-menu-toggle');
+    const menu = document.getElementById('mobile-menu');
+    const iconOpen = document.getElementById('menu-icon-open');
+    const iconClose = document.getElementById('menu-icon-close');
+    if (!toggle || !menu) return;
+    toggle.addEventListener('click', function() {
+      const isHidden = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden');
+      iconOpen.style.display = isHidden ? 'none' : '';
+      iconClose.style.display = isHidden ? '' : 'none';
+    });
+    // 点击菜单项后关闭
+    menu.querySelectorAll('a').forEach(function(a) {
+      a.addEventListener('click', function() {
+        menu.classList.add('hidden');
+        iconOpen.style.display = '';
+        iconClose.style.display = 'none';
+      });
+    });
+  })();
+</script>

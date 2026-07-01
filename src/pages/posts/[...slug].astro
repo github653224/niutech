@@ -3,6 +3,7 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import PostToc from '../../components/PostToc.astro';
+import Comments from '../../components/Comments.astro';
 
 // 简单字符串哈希（用于密码保护，非加密用途）
 function strHash(str: string): string {
@@ -26,6 +27,7 @@ const post = Astro.props;
 const { Content } = await post.render();
 const { title, description, pubDate, updatedDate, tags, password, series, seriesOrder } = post.data;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
 // 上一篇 / 下一篇
 const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
@@ -53,7 +55,18 @@ if (series) {
 const seriesSlug = series || '';
 ---
 
-<BaseLayout title={`${title} - 热爱技术的小牛`} description={description}>
+<BaseLayout title={`${title} - 热爱技术的小牛`} description={description} showProgress image={post.data.cover} type="article" publishedTime={pubDate}>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    datePublished: pubDate.toISOString(),
+    dateModified: (updatedDate || pubDate).toISOString(),
+    author: { '@type': 'Person', name: '热爱技术的小牛' },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalURL.toString() },
+    ...(post.data.cover ? { image: post.data.cover } : {}),
+  })} slot="head" />
   <article class="container-prose py-10">
     <!-- 返回 -->
     <a href={`${base}/`} class="inline-flex items-center gap-1 text-sm mb-8 link-brand">
@@ -174,6 +187,9 @@ const seriesSlug = series || '';
         </a>
       ) : <div />}
     </nav>
+
+    <!-- 评论 -->
+    {!password && <Comments />}
   </article>
 
   <!-- 浮动目录 + 回到顶部/底部 -->

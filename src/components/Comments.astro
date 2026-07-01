@@ -1,0 +1,86 @@
+---
+// Giscus 评论组件
+// 使用前需配置：https://giscus.app 生成你的 repo / repoId / category / categoryId
+// 然后填到下面的 GISCUS_CONFIG 里
+const GISCUS_CONFIG = {
+  repo: 'github653224/niutech', // 你的 GitHub 仓库（格式：owner/repo）
+  repoId: '', // 在 giscus.app 生成
+  category: 'Comments', // Discussions 分类名
+  categoryId: '', // 在 giscus.app 生成
+  mapping: 'pathname',
+  reactionsEnabled: '1',
+  emitMetadata: '0',
+  inputPosition: 'top',
+  lang: 'zh-CN',
+  loading: 'lazy',
+};
+
+const isConfigured = GISCUS_CONFIG.repoId && GISCUS_CONFIG.categoryId;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+{isConfigured ? (
+  <section class="giscus-wrapper mt-14">
+    <h2 class="text-xl font-bold tracking-tight mb-6">评论</h2>
+    <div class="giscus"></div>
+    <script is:inline define:vars={{ GISCUS_CONFIG, base }}>
+      (function() {
+        const script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.setAttribute('data-repo', GISCUS_CONFIG.repo);
+        script.setAttribute('data-repo-id', GISCUS_CONFIG.repoId);
+        script.setAttribute('data-category', GISCUS_CONFIG.category);
+        script.setAttribute('data-category-id', GISCUS_CONFIG.categoryId);
+        script.setAttribute('data-mapping', GISCUS_CONFIG.mapping);
+        script.setAttribute('data-reactions-enabled', GISCUS_CONFIG.reactionsEnabled);
+        script.setAttribute('data-emit-metadata', GISCUS_CONFIG.emitMetadata);
+        script.setAttribute('data-input-position', GISCUS_CONFIG.inputPosition);
+        script.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        script.setAttribute('data-lang', GISCUS_CONFIG.lang);
+        script.setAttribute('data-loading', GISCUS_CONFIG.loading);
+        script.crossOrigin = 'anonymous';
+        script.async = true;
+        document.querySelector('.giscus').appendChild(script);
+
+        // 主题切换时同步 giscus 主题
+        const observer = new MutationObserver(() => {
+          const isDark = document.documentElement.classList.contains('dark');
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (iframe) {
+            iframe.contentWindow.postMessage(
+              { giscus: { setConfig: { theme: isDark ? 'dark' : 'light' } } },
+              'https://giscus.app'
+            );
+          }
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      })();
+    </script>
+  </section>
+) : (
+  <section class="giscus-pending mt-14">
+    <div class="card p-6 text-center" style="color: rgb(var(--muted));">
+      <p class="text-sm">
+        评论系统待配置。
+      </p>
+      <p class="text-xs mt-2">
+        博主请前往
+        <a href="https://giscus.app" target="_blank" rel="noopener" class="link-brand">giscus.app</a>
+        生成配置，填入 <code class="text-xs px-1 py-0.5 rounded" style="background: rgb(var(--card));">src/components/Comments.astro</code> 的 GISCUS_CONFIG
+      </p>
+    </div>
+  </section>
+)}
+
+<style is:global>
+  .giscus-wrapper {
+    max-width: 100%;
+  }
+  .giscus {
+    min-height: 200px;
+  }
+  .giscus iframe {
+    width: 100%;
+    border: none;
+  }
+</style>

@@ -7,20 +7,28 @@ interface Props {
 }
 const { post } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const { title, description, pubDate, tags, pinned } = post.data;
+const { title, description, pubDate, tags, pinned, cover, series, seriesOrder } = post.data;
 ---
 
-<article class="card p-6 hover:border-brand-400 hover:shadow-lg hover:-translate-y-0.5">
+<article class="card overflow-hidden hover:border-brand-400 hover:shadow-lg hover:-translate-y-0.5 group">
   <a href={`${base}/posts/${post.slug}`} class="block">
-    <h3 class="text-lg font-bold tracking-tight group-hover:text-brand-600 flex items-center gap-2">
-      {pinned && <span class="text-base" title="置顶">📌</span>}
-      {title}
-    </h3>
-    <p class="mt-2 text-sm line-clamp-2" style="color: rgb(var(--muted));">
-      {description}
-    </p>
+    {cover && (
+      <div class="aspect-[16/9] overflow-hidden bg-brand-50 dark:bg-brand-900/10">
+        <img src={cover} alt={title} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+      </div>
+    )}
+    <div class="p-6">
+      <h3 class="text-lg font-bold tracking-tight group-hover:text-brand-600 flex items-center gap-2">
+        {pinned && <span class="text-base" title="置顶">📌</span>}
+        {series && <span class="text-xs px-1.5 py-0.5 rounded font-medium" style="background: rgb(var(--brand) / 0.1); color: rgb(var(--brand));" title={`${series} · 第 ${seriesOrder ?? '?'} 篇`}>系列</span>}
+        {title}
+      </h3>
+      <p class="mt-2 text-sm line-clamp-2" style="color: rgb(var(--muted));">
+        {description}
+      </p>
+    </div>
   </a>
-  <div class="mt-4 flex flex-wrap items-center gap-3">
+  <div class="px-6 pb-6 -mt-2 flex flex-wrap items-center gap-3">
     <span class="text-xs" style="color: rgb(var(--muted));">
       <FormattedDate date={pubDate} />
     </span>

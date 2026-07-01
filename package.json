@@ -13,8 +13,12 @@
     "publisher": "node publisher/server.js"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.2.1",
     "@astrojs/tailwind": "^5.1.4",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/noto-sans-sc": "^5.2.9",
     "astro": "^4.16.18",
     "bcryptjs": "^2.4.3",
     "dotenv": "^17.4.2",

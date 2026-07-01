@@ -50,7 +50,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       <h2>联系方式</h2>
       <ul>
         <li>GitHub：<a href={AUTHOR.social.github} target="_blank" rel="noopener">@github653224</a></li>
-        <li>邮箱：<a href="mailto:944851899@qq.com">944851899@qq.com</a></li>
+        <li>邮箱：<a href="#" id="email-link" data-mail="944851899@qq.com">点击查看邮箱</a></li>
       </ul>
 
       <!-- 二维码 -->
@@ -92,3 +92,15 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     color: rgb(var(--muted));
   }
 </style>
+
+<script is:inline>
+  // 邮箱防爬：点击后动态拼接邮箱地址
+  document.getElementById('email-link').addEventListener('click', function(e) {
+    e.preventDefault();
+    const mail = this.dataset.mail;
+    this.href = 'mailto:' + mail;
+    this.textContent = mail;
+    // 触发邮件客户端
+    window.location.href = 'mailto:' + mail;
+  });
+</script>

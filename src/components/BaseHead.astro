@@ -1,15 +1,28 @@
 ---
 import '../styles/global.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/noto-sans-sc/400.css';
+import '@fontsource/noto-sans-sc/500.css';
+import '@fontsource/noto-sans-sc/700.css';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
+  type?: string;
+  publishedTime?: Date;
 }
 
-const { title = SITE_TITLE, description = SITE_DESCRIPTION } = Astro.props;
+const { title = SITE_TITLE, description = SITE_DESCRIPTION, image, type = 'website', publishedTime } = Astro.props;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const ogImage = image || `${base}/media/images/og-default.jpg`;
 ---
 
 <meta charset="utf-8" />
@@ -19,22 +32,94 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 <title>{title}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonicalURL} />
+<link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={`${base}/rss.xml`} />
 
 <!-- Open Graph -->
-<meta property="og:type" content="website" />
+<meta property="og:type" content={type} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonicalURL} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:site_name" content={SITE_TITLE} />
+{publishedTime && <meta property="article:published_time" content={publishedTime.toISOString()} />}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
 
 <!-- 防主题闪烁：在页面渲染前应用保存的主题 -->
 <script is:inline define:vars={{ base }}>
   (function () {
     const stored = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (stored === 'dark' || (!stored && prefersDark)) {
+    const isDark = stored === 'dark' || (!stored && prefersDark);
+    if (isDark) {
       document.documentElement.classList.add('dark');
     }
     // 暴露 base 路径给内联脚本使用
     document.documentElement.dataset.base = base;
+    // 代码块主题切换：Shiki dual themes 需要根元素 data-theme
+    document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- 监听主题变化，同步更新代码块主题 -->
+<script>
+  (function() {
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark');
+      document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  })();
+</script>
+
+<!-- 代码块复制按钮 + 语言标签：构建后给每个 pre 加工具条 -->
+<script>
+  (function() {
+    function enhanceCodeBlocks() {
+      const pres = document.querySelectorAll('.prose-custom pre');
+      pres.forEach(function(pre) {
+        if (pre.querySelector('.code-block-tools')) return;
+        // 从 class 里提取语言：astro-code / language-xxx
+        const langMatch = pre.className.match(/language-([\w-]+)/);
+        const lang = langMatch ? langMatch[1] : '';
+        const tools = document.createElement('div');
+        tools.className = 'code-block-tools';
+        if (lang) {
+          const langEl = document.createElement('span');
+          langEl.className = 'code-lang';
+          langEl.textContent = lang;
+          tools.appendChild(langEl);
+        }
+        const btn = document.createElement('button');
+        btn.className = 'code-copy-btn';
+        btn.type = 'button';
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制';
+        btn.addEventListener('click', function() {
+          const code = pre.querySelector('code');
+          const text = code ? code.textContent : pre.textContent;
+          navigator.clipboard.writeText(text).then(function() {
+            btn.classList.add('copied');
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>已复制';
+            setTimeout(function() {
+              btn.classList.remove('copied');
+              btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制';
+            }, 2000);
+          });
+        });
+        tools.appendChild(btn);
+        pre.appendChild(tools);
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enhanceCodeBlocks);
+    } else {
+      enhanceCodeBlocks();
+    }
+    // Astro view transitions 兼容
+    document.addEventListener('astro:page-load', enhanceCodeBlocks);
   })();
 </script>

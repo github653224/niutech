@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://github653224.github.io/niutech/sitemap-index.xml

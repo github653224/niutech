@@ -6,16 +6,22 @@ import Footer from '../components/Footer.astro';
 interface Props {
   title?: string;
   description?: string;
+  showProgress?: boolean;
+  image?: string;
+  type?: string;
+  publishedTime?: Date;
 }
-const { title, description } = Astro.props;
+const { title, description, showProgress = false, image, type, publishedTime } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead title={title} description={description} image={image} type={type} publishedTime={publishedTime} />
+    <slot name="head" />
   </head>
   <body class="min-h-screen flex flex-col">
+    {showProgress && <div id="reading-progress" class="reading-progress"><div class="reading-progress-bar"></div></div>}
     <Header />
     <main class="flex-1">
       <slot />
@@ -23,3 +29,40 @@ const { title, description } = Astro.props;
     <Footer />
   </body>
 </html>
+
+{showProgress && (
+  <script>
+    (function() {
+      const bar = document.querySelector('#reading-progress .reading-progress-bar');
+      if (!bar) return;
+      function update() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const percent = docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0;
+        bar.style.width = percent + '%';
+      }
+      window.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+      update();
+    })();
+  </script>
+)}
+
+<style is:global>
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 60;
+    background: transparent;
+    pointer-events: none;
+  }
+  .reading-progress-bar {
+    height: 100%;
+    width: 0;
+    background: rgb(var(--brand));
+    transition: width 0.1s ease-out;
+  }
+</style>
