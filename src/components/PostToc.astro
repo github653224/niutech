@@ -101,8 +101,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   });
 </script>
 
-<style>
-  /* 浮动目录 */
+<style is:global>
+  /* 浮动目录 — 使用 global 因为目录链接由 JS 动态创建，scoped 样式无法应用 */
   .toc-aside {
     position: fixed;
     left: calc(50% - 42rem);

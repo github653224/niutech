@@ -1,6 +1,7 @@
 ---
 import { SITE_TITLE, NAV_LINKS } from '../consts';
 import ThemeToggle from './ThemeToggle.astro';
+import SearchDialog from './SearchDialog.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const path = Astro.url.pathname.replace(base, '') || '/';
@@ -33,6 +34,7 @@ const isActive = (href: string) => {
         ))
       }
       <ThemeToggle />
+      <SearchDialog />
     </nav>
   </div>
 

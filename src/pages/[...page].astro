@@ -1,18 +1,25 @@
 ---
 import { getCollection } from 'astro:content';
+import type { GetStaticPathsOptions } from 'astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
-import { AUTHOR, SITE_TITLE } from '../consts';
+import Pagination from '../components/Pagination.astro';
+import { AUTHOR } from '../consts';
 
-const posts = (await getCollection('posts', ({ data }) => !data.draft))
-  .sort((a, b) => {
-    // 置顶优先
-    const pa = a.data.pinned ? 1 : 0;
-    const pb = b.data.pinned ? 1 : 0;
-    if (pa !== pb) return pb - pa;
-    return b.data.pubDate.valueOf() - a.data.pubDate.valueOf();
-  });
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+  const posts = (await getCollection('posts', ({ data }) => !data.draft))
+    .sort((a, b) => {
+      // 置顶优先
+      const pa = a.data.pinned ? 1 : 0;
+      const pb = b.data.pinned ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return b.data.pubDate.valueOf() - a.data.pubDate.valueOf();
+    });
 
+  return paginate(posts, { pageSize: 9 });
+}
+
+const { page } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
@@ -45,13 +52,15 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   <section class="container-wide py-12">
     <div class="flex items-center justify-between mb-8">
       <h2 class="text-2xl font-bold tracking-tight">最新文章</h2>
-      <span class="text-sm" style="color: rgb(var(--muted));">共 {posts.length} 篇</span>
+      <span class="text-sm" style="color: rgb(var(--muted));">
+        第 {page.currentPage} / {page.lastPage} 页 · 共 {page.totalCount} 篇
+      </span>
     </div>
 
     {
-      posts.length > 0 ? (
-        <div class="grid gap-5 sm:grid-cols-2">
-          {posts.map((post) => <PostCard post={post} />)}
+      page.data.length > 0 ? (
+        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {page.data.map((post) => <PostCard post={post} />)}
         </div>
       ) : (
         <div class="card p-12 text-center">
@@ -59,5 +68,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         </div>
       )
     }
+
+    <Pagination page={page} />
   </section>
 </BaseLayout>

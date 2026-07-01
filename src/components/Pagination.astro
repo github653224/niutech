@@ -1,0 +1,116 @@
+---
+// 分页导航组件
+interface PageData {
+  currentPage: number;
+  lastPage: number;
+  url: {
+    prev: string | undefined;
+    next: string | undefined;
+    current: string;
+  };
+}
+interface Props {
+  page: PageData;
+}
+const { page } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+// 根据页码生成 URL（第 1 页是首页）
+function pageUrl(n: number): string {
+  if (n === 1) return `${base}/`;
+  return `${base}/${n}/`;
+}
+
+// 生成页码数组（当前页前后各显示 2 页，首尾各显示 1 页）
+function getPageNumbers(current: number, last: number): (number | '...')[] {
+  if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(last - 1, current + 1);
+  if (start > 2) pages.push('...');
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < last - 1) pages.push('...');
+  pages.push(last);
+  return pages;
+}
+const numbers = getPageNumbers(page.currentPage, page.lastPage);
+---
+
+{
+  page.lastPage > 1 && (
+    <nav class="flex items-center justify-center gap-2 mt-10" aria-label="分页">
+      {page.url.prev ? (
+        <a href={page.url.prev} class="page-btn" aria-label="上一页">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+      ) : (
+        <span class="page-btn page-btn-disabled" aria-disabled="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </span>
+      )}
+
+      {numbers.map((n) =>
+        n === '...' ? (
+          <span class="page-ellipsis">…</span>
+        ) : n === page.currentPage ? (
+          <span class="page-btn page-btn-active" aria-current="page">{n}</span>
+        ) : (
+          <a href={pageUrl(n)} class="page-btn">{n}</a>
+        )
+      )}
+
+      {page.url.next ? (
+        <a href={page.url.next} class="page-btn" aria-label="下一页">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+      ) : (
+        <span class="page-btn page-btn-disabled" aria-disabled="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </span>
+      )}
+    </nav>
+  )
+}
+
+<style>
+  .page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(var(--muted));
+    background: rgb(var(--card));
+    border: 1px solid rgb(var(--border));
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .page-btn:hover:not(.page-btn-disabled):not(.page-btn-active) {
+    color: rgb(var(--brand));
+    border-color: rgb(var(--brand));
+  }
+  .page-btn-active {
+    color: #fff;
+    background: rgb(var(--brand));
+    border-color: rgb(var(--brand));
+    cursor: default;
+  }
+  .page-btn-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .page-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 36px;
+    color: rgb(var(--muted));
+    font-size: 14px;
+  }
+</style>
