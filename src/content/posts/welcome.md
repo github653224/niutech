@@ -52,4 +52,8 @@ def should_release(pr_diff, test_report):
 
 让我们开始吧。
 
+<audio src="/media/audio/test_vedio.MP3" controls></audio>
+<audio src="/media/audio/test_vedio.MP3" controls></audio>
+
+
 <video src="/media/video/test_vedio.mp4" controls></video>
