@@ -84,7 +84,7 @@ app.get('/api/posts/:slug', auth, (req, res) => {
 // 发布 / 更新
 app.post('/api/publish', auth, async (req, res) => {
   try {
-    const { title, description, tags, pubDate, body, slug: customSlug, originalSlug, category } = req.body;
+    const { title, description, tags, pubDate, body, slug: customSlug, originalSlug, category, pinned } = req.body;
     if (!title || !body) return res.status(400).json({ error: '标题和正文不能为空' });
 
     const date = pubDate || new Date().toISOString().slice(0, 10);
@@ -98,7 +98,7 @@ app.post('/api/publish', auth, async (req, res) => {
     }
 
     const tagsArray = parseTagsInput(tags);
-    const fm = buildFrontmatter({ title, description, tags: tagsArray, pubDate: date, category });
+    const fm = buildFrontmatter({ title, description, tags: tagsArray, pubDate: date, category, pinned });
     fs.writeFileSync(filepath, fm + body.trim() + '\n', 'utf-8');
 
     const git = simpleGit(ROOT);
@@ -156,12 +156,35 @@ app.post('/api/set-category', auth, async (req, res) => {
     if (!fs.existsSync(file)) return res.status(404).json({ error: '不存在' });
     const content = fs.readFileSync(file, 'utf-8');
     const { data, body } = parseFrontmatter(content);
-    data.category = category || '';
+    if (category) data.category = category;
+    else delete data.category;
     const fm = buildFrontmatter({ ...data, tags: data.tags || [] });
     fs.writeFileSync(file, fm + body.trim() + '\n', 'utf-8');
     const git = simpleGit(ROOT);
     await git.add('.');
     await git.commit(`category: ${slug} -> ${category || '未分类'}`);
+    try { await git.push(); } catch (e) {}
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 置顶/取消置顶
+app.post('/api/set-pin', auth, async (req, res) => {
+  try {
+    const { slug, pinned } = req.body;
+    const file = path.join(POSTS_DIR, `${slug}.md`);
+    if (!fs.existsSync(file)) return res.status(404).json({ error: '不存在' });
+    const content = fs.readFileSync(file, 'utf-8');
+    const { data, body } = parseFrontmatter(content);
+    if (pinned) data.pinned = true;
+    else delete data.pinned;
+    const fm = buildFrontmatter({ ...data, tags: data.tags || [] });
+    fs.writeFileSync(file, fm + body.trim() + '\n', 'utf-8');
+    const git = simpleGit(ROOT);
+    await git.add('.');
+    await git.commit(`pin: ${slug} -> ${pinned ? '置顶' : '取消'}`);
     try { await git.push(); } catch (e) {}
     res.json({ ok: true });
   } catch (e) {
@@ -212,7 +235,7 @@ function parseFrontmatter(content) {
         } else {
           data[key] = [];
         }
-      } else if (key === 'draft') {
+      } else if (key === 'draft' || key === 'pinned') {
         data[key] = val === 'true';
       } else {
         data[key] = stripQuotes(val);
@@ -245,7 +268,7 @@ function parseTagsInput(tags) {
     .filter(Boolean);
 }
 
-function buildFrontmatter({ title, description, tags, pubDate, category }) {
+function buildFrontmatter({ title, description, tags, pubDate, category, pinned }) {
   let fm = '---\n';
   fm += `title: ${JSON.stringify(title || '')}\n`;
   fm += `description: ${JSON.stringify(description || '')}\n`;
@@ -258,6 +281,9 @@ function buildFrontmatter({ title, description, tags, pubDate, category }) {
   }
   if (category) {
     fm += `category: ${JSON.stringify(category)}\n`;
+  }
+  if (pinned) {
+    fm += `pinned: true\n`;
   }
   fm += 'draft: false\n';
   fm += '---\n\n';

@@ -236,6 +236,9 @@ body {
 .empty-sub { color: var(--muted); font-size: 12px; padding: 6px 12px; font-style: italic; opacity: 0.6; }
 
 .post-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   padding: 9px 12px;
   border-radius: 8px;
   cursor: pointer;
@@ -249,6 +252,21 @@ body {
   border-left-color: var(--brand);
 }
 .post-item.active .pi-title { color: var(--brand); font-weight: 600; }
+.post-item.is-pinned .pi-title::before {
+  content: '📌 ';
+}
+.post-item.dragging { opacity: 0.4; }
+.post-item .pin-icon {
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.4;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.post-item:hover .pin-icon { opacity: 0.8; }
+.post-item.is-pinned .pin-icon { opacity: 1; }
+.pin-icon:hover { transform: scale(1.2); }
+.pi-body { flex: 1; min-width: 0; }
 .pi-title {
   font-size: 13px;
   font-weight: 500;
@@ -257,6 +275,34 @@ body {
   text-overflow: ellipsis;
 }
 .pi-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.folder-group-head.drag-over {
+  background: var(--brand-soft);
+  outline: 2px dashed var(--brand);
+  outline-offset: -2px;
+}
+
+.pin-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  user-select: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  transition: all 0.15s;
+}
+.pin-label:hover { color: var(--fg); }
+.pin-label input { display: none; }
+.pin-label:has(input:checked) {
+  color: var(--warn);
+  border-color: var(--warn);
+  background: rgba(245,158,11,0.1);
+}
 
 .empty { color: var(--muted); font-size: 13px; padding: 16px 12px; text-align: center; }
 .logout-btn {

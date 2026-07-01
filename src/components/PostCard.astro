@@ -7,12 +7,13 @@ interface Props {
 }
 const { post } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const { title, description, pubDate, tags } = post.data;
+const { title, description, pubDate, tags, pinned } = post.data;
 ---
 
 <article class="card p-6 hover:border-brand-400 hover:shadow-lg hover:-translate-y-0.5">
   <a href={`${base}/posts/${post.slug}`} class="block">
-    <h3 class="text-lg font-bold tracking-tight group-hover:text-brand-600">
+    <h3 class="text-lg font-bold tracking-tight group-hover:text-brand-600 flex items-center gap-2">
+      {pinned && <span class="text-base" title="置顶">📌</span>}
       {title}
     </h3>
     <p class="mt-2 text-sm line-clamp-2" style="color: rgb(var(--muted));">

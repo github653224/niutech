@@ -5,6 +5,7 @@ pubDate: 2026-07-01
 tags:
   - "微信"
   - "电脑技术"
+category: "公众号文章"
 draft: false
 ---
 
