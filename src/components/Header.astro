@@ -1,0 +1,54 @@
+---
+import { SITE_TITLE, NAV_LINKS } from '../consts';
+import ThemeToggle from './ThemeToggle.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const path = Astro.url.pathname.replace(base, '') || '/';
+const isActive = (href: string) => {
+  if (href === '/') return path === '/';
+  return path.startsWith(href);
+};
+---
+
+<header class="sticky top-0 z-40 backdrop-blur-md border-b" style="border-color: rgb(var(--border)); background-color: rgb(var(--bg) / 0.8);">
+  <div class="container-wide flex h-16 items-center justify-between">
+    <a href={`${base}/`} class="flex items-center gap-2 font-bold tracking-tight">
+      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white text-sm font-mono font-bold">牛</span>
+      <span class="hidden sm:inline">{SITE_TITLE}</span>
+    </a>
+
+    <nav class="flex items-center gap-1">
+      {
+        NAV_LINKS.map((link) => (
+          <a
+            href={`${base}${link.href === '/' ? '/' : link.href}`}
+            class={`hidden sm:inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isActive(link.href)
+                ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20'
+                : 'hover:text-brand-600 dark:hover:text-brand-400'
+            }`}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+      <ThemeToggle />
+    </nav>
+  </div>
+
+  <!-- 移动端导航 -->
+  <nav class="sm:hidden flex items-center justify-around border-t px-2 py-1" style="border-color: rgb(var(--border));">
+    {
+      NAV_LINKS.map((link) => (
+        <a
+          href={`${base}${link.href === '/' ? '/' : link.href}`}
+          class={`flex-1 text-center py-2 rounded-lg text-sm font-medium ${
+            isActive(link.href) ? 'text-brand-600 dark:text-brand-400' : ''
+          }`}
+        >
+          {link.label}
+        </a>
+      ))
+    }
+  </nav>
+</header>

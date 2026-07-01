@@ -1,0 +1,38 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  const tags = new Set<string>();
+  posts.forEach((p) => p.data.tags.forEach((t) => tags.add(t)));
+  return [...tags].map((tag) => ({
+    params: { tag },
+    props: {
+      tag,
+      posts: posts
+        .filter((p) => p.data.tags.includes(tag))
+        .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
+    },
+  }));
+}
+
+const { tag, posts } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout title={`#${tag} - 热爱技术的小牛`}>
+  <section class="container-wide py-12">
+    <a href={`${base}/tags`} class="inline-flex items-center gap-1 text-sm mb-6 link-brand">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+      全部标签
+    </a>
+    <h1 class="text-3xl font-extrabold tracking-tight mb-2">#{tag}</h1>
+    <p class="mb-8" style="color: rgb(var(--muted));">共 {posts.length} 篇文章</p>
+
+    <div class="grid gap-5 sm:grid-cols-2">
+      {posts.map((post) => <PostCard post={post} />)}
+    </div>
+  </section>
+</BaseLayout>

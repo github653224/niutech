@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>编辑器 · 热爱技术的小牛发布台</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo">牛</span>
+        <span class="title">发布台</span>
+      </div>
+      <button id="new-btn" class="new-btn">+ 新建文章</button>
+      <div id="post-list" class="post-list"></div>
+      <button id="logout-btn" class="logout-btn">退出登录</button>
+    </aside>
+
+    <!-- 编辑区 -->
+    <main class="editor">
+      <div class="toolbar">
+        <input id="title" placeholder="文章标题" class="title-input" />
+        <button id="publish-btn" class="publish-btn">发布到 GitHub</button>
+      </div>
+
+      <div class="meta-row">
+        <input id="slug" placeholder="URL 标识（留空自动生成）" class="meta-input" />
+        <input id="pubDate" type="date" class="meta-input date" />
+      </div>
+      <div class="meta-row">
+        <input id="description" placeholder="一句话描述（用于列表和 SEO）" class="meta-input" />
+      </div>
+      <div class="meta-row">
+        <input id="tags" placeholder="标签，逗号分隔，如：测试提效,AI 提效" class="meta-input" />
+      </div>
+
+      <div class="editor-body">
+        <div class="pane">
+          <div class="pane-head">Markdown 编辑</div>
+          <textarea id="body" placeholder="在这里写 Markdown 正文…"></textarea>
+        </div>
+        <div class="pane">
+          <div class="pane-head">实时预览</div>
+          <div id="preview" class="preview"></div>
+        </div>
+      </div>
+
+      <div id="status" class="status"></div>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
