@@ -1,8 +1,13 @@
 ---
-title: '从工具到 SaaS：AI 产品的工程化要点'
-description: '把一个 AI 工具做成能给团队用的 SaaS 产品，中间有不少工程化坑。这篇聊聊我踩过的几个关键点：LLM 路由、异步执行、可追溯性、成本控制。'
+title: "从工具到 SaaS：AI 产品的工程化要点"
+description: "把一个 AI 工具做成能给团队用的 SaaS 产品，中间有不少工程化坑。这篇聊聊我踩过的几个关键点：LLM 路由、异步执行、可追溯性、成本控制。"
 pubDate: 2026-06-10
-tags: ['AI SaaS', '工程化', 'Agent']
+tags:
+  - "AI SaaS"
+  - "工程化"
+  - "Agent"
+category: "公众号文章"
+draft: false
 ---
 
 把一个 AI 工具做出来 demo 很容易，但做成能给团队稳定用的 SaaS 产品，中间有一大堆工程化问题。这篇聊聊我做 AI 测试平台过程中踩的几个关键点。
