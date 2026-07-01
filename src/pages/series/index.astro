@@ -1,0 +1,82 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+
+// 聚合所有带 series 字段的文章
+const allPosts = await getCollection('posts', ({ data }) => !data.draft && data.series);
+
+// 按 series 分组
+const seriesMap = new Map<string, typeof allPosts>();
+allPosts.forEach((post) => {
+  const s = post.data.series!;
+  if (!seriesMap.has(s)) seriesMap.set(s, []);
+  seriesMap.get(s)!.push(post);
+});
+
+// 每个系列内部按 seriesOrder 排序，并计算最新更新时间
+const seriesList = [...seriesMap.entries()].map(([name, posts]) => {
+  const sorted = posts.sort((a, b) => {
+    const oa = a.data.seriesOrder ?? 999;
+    const ob = b.data.seriesOrder ?? 999;
+    return oa - ob;
+  });
+  const latest = sorted.reduce((max, p) =>
+    p.data.pubDate > max.data.pubDate ? p : max, sorted[0]);
+  return {
+    name,
+    posts: sorted,
+    count: sorted.length,
+    latest,
+  };
+}).sort((a, b) => b.latest.data.pubDate.valueOf() - a.latest.data.pubDate.valueOf());
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout title="系列文章 - 热爱技术的小牛">
+  <section class="container-wide py-12">
+    <h1 class="text-3xl font-extrabold tracking-tight mb-2">系列文章</h1>
+    <p class="mb-8" style="color: rgb(var(--muted));">共 {seriesList.length} 个系列 · {allPosts.length} 篇文章</p>
+
+    {
+      seriesList.length > 0 ? (
+        <div class="grid gap-5 sm:grid-cols-2">
+          {seriesList.map((s) => (
+            <a href={`${base}/series/${s.name}`} class="card p-6 hover:border-brand-400 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-lg font-bold tracking-tight truncate">{s.name}</h3>
+                  <p class="text-xs mt-1" style="color: rgb(var(--muted));">
+                    {s.count} 篇 · 最近更新 <FormattedDate date={s.latest.data.pubDate} />
+                  </p>
+                </div>
+                <span class="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold text-sm">
+                  {s.count}
+                </span>
+              </div>
+              <div class="space-y-1.5">
+                {s.posts.slice(0, 3).map((p, i) => (
+                  <div class="flex items-center gap-2 text-sm">
+                    <span class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium" style="background-color: rgb(var(--border)); color: rgb(var(--muted));">
+                      {p.data.seriesOrder ?? i + 1}
+                    </span>
+                    <span class="truncate" style="color: rgb(var(--muted));">{p.data.title}</span>
+                  </div>
+                ))}
+                {s.posts.length > 3 && (
+                  <p class="text-xs pl-7" style="color: rgb(var(--muted));">还有 {s.posts.length - 3} 篇…</p>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="card p-12 text-center">
+          <p style="color: rgb(var(--muted));">还没有系列文章。</p>
+          <p class="text-sm mt-2" style="color: rgb(var(--muted));">在发布台写文章时填写「系列名」字段即可创建系列。</p>
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>

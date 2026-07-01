@@ -17,6 +17,7 @@ export const AUTHOR = {
 // 导航菜单
 export const NAV_LINKS = [
   { href: '/', label: '首页' },
+  { href: '/series', label: '系列' },
   { href: '/tags', label: '标签' },
   { href: '/about', label: '关于' },
 ];
