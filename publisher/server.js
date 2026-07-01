@@ -33,6 +33,12 @@ app.use(
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 根路由：已登录跳编辑器，未登录跳登录页
+app.get('/', (req, res) => {
+  if (req.session && req.session.user) return res.redirect('/editor.html');
+  res.redirect('/login.html');
+});
+
 function auth(req, res, next) {
   if (req.session && req.session.user) return next();
   res.status(401).json({ error: '未登录' });

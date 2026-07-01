@@ -26,6 +26,14 @@
 - 旧 SaaS 网站（Vite+React TestAgent 官网）的 git 历史已清空（用户确认不需要备份）
 - 当前 git 历史从 `feat: 初始化「热爱技术的小牛」个人技术博客 (niutech)` 开始
 
+## GitHub 部署（已上线）
+- 仓库：https://github.com/github653224/niutech.git
+- GitHub 用户名：github653224
+- Pages 地址：https://github653224.github.io/niutech/
+- Pages build_type = workflow（GitHub Actions 部署）
+- 默认分支 main
+- Deploy workflow 已验证成功
+
 ## 发布流程
 1. `npm run publisher` 启动发布台
 2. 浏览器登录 → Markdown 编辑器写文章 → 点「发布到 GitHub」
