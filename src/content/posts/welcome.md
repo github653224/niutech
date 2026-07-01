@@ -6,6 +6,7 @@ tags:
   - "随笔"
   - "公告"
 category: "公众号文章"
+pinned: true
 draft: false
 ---
 
