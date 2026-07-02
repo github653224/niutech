@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 
-// 聚合所有带 series 字段的文章
+// 聚合所有带 series 字段的文章（不含 seriesOrder 的也算系列文章）
 const allPosts = await getCollection('posts', ({ data }) => !data.draft && data.series);
 
 // 按 series 分组
@@ -23,10 +23,14 @@ const seriesList = [...seriesMap.entries()].map(([name, posts]) => {
   });
   const latest = sorted.reduce((max, p) =>
     p.data.pubDate > max.data.pubDate ? p : max, sorted[0]);
+  // 从系列文章中找一个有 seriesTotal 的
+  const meta = sorted.find((p) => p.data.seriesTotal);
+  const seriesTotal = meta?.data.seriesTotal ?? null;
   return {
     name,
     posts: sorted,
     count: sorted.length,
+    seriesTotal,
     latest,
   };
 }).sort((a, b) => b.latest.data.pubDate.valueOf() - a.latest.data.pubDate.valueOf());
@@ -52,7 +56,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                   </p>
                 </div>
                 <span class="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold text-sm">
-                  {s.count}
+                  {s.seriesTotal ? s.count + '/' + s.seriesTotal : s.count}
                 </span>
               </div>
               <div class="space-y-1.5">
