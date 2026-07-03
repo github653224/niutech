@@ -194,6 +194,21 @@ const seriesSlug = series || '';
 
   <!-- 浮动目录 + 回到顶部/底部 -->
   <PostToc />
+
+  <!-- 右侧标签栏（大屏显示） -->
+  {tags && tags.length > 0 && (
+    <aside class="post-tags-aside" aria-label="文章标签">
+      <p class="post-tags-title">标签</p>
+      <div class="post-tags-list">
+        {tags.map((tag) => (
+          <a href={`${base}/tags/${tag}`} class="post-tags-link">
+            <span class="post-tags-hash">#</span>
+            <span class="post-tags-name">{tag}</span>
+          </a>
+        ))}
+      </div>
+    </aside>
+  )}
 </BaseLayout>
 
 {password && (
@@ -426,5 +441,67 @@ const seriesSlug = series || '';
   @media (max-width: 640px) {
     .series-nav-footer { grid-template-columns: 1fr; }
     .series-nav-link.next { text-align: left; }
+  }
+
+  /* ========== 右侧标签栏 ========== */
+  .post-tags-aside {
+    position: fixed;
+    right: calc(50% - 42rem);
+    top: 8rem;
+    width: 12rem;
+    max-height: calc(100vh - 12rem);
+    overflow-y: auto;
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .post-tags-aside { display: block; }
+  }
+  .post-tags-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgb(var(--muted));
+    margin-bottom: 12px;
+    padding-left: 12px;
+  }
+  .post-tags-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-left: 2px solid rgb(var(--border));
+    padding-left: 0;
+  }
+  .post-tags-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgb(var(--muted));
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    margin-left: -2px;
+    transition: all 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .post-tags-link:hover {
+    color: rgb(var(--brand));
+    border-left-color: rgb(var(--brand));
+    background: rgba(var(--brand-raw), 0.06);
+  }
+  .post-tags-hash {
+    color: rgb(var(--border));
+    font-weight: 400;
+  }
+  .post-tags-link:hover .post-tags-hash {
+    color: rgb(var(--brand));
+  }
+  .post-tags-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>
