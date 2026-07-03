@@ -3,9 +3,7 @@ title: "PR/MR 驱动的 AI 测试平台：从代码变更到风险结论"
 description: "分享一个我正在做的 AI 自动化测试平台，它围绕 PR/MR 事件，自动完成影响分析、测试范围选择、用例生成与执行、smoke 验证，最终给出放行/阻断建议。"
 pubDate: 2026-06-25
 tags:
-  - "AI 提效"
-  - "自动化测试"
-  - "Agent"
+  - "AI测试"
 category: "公众号文章"
 draft: false
 ---
