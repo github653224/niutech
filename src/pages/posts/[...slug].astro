@@ -36,6 +36,14 @@ const index = allPosts.findIndex((p) => p.slug === post.slug);
 const prev = index > 0 ? allPosts[index - 1] : null;
 const next = index < allPosts.length - 1 ? allPosts[index + 1] : null;
 
+// 收集所有标签（按文章数量排序）
+const allTags = new Map<string, number>();
+allPosts.forEach((p) => {
+  p.data.tags.forEach((t) => allTags.set(t, (allTags.get(t) || 0) + 1));
+});
+const allTagsList = [...allTags.entries()].sort((a, b) => b[1] - a[1]);
+const currentTags = new Set(tags || []);
+
 // 系列文章：如果当前文章属于某个系列，取该系列所有文章（按 seriesOrder 排序）
 let seriesPosts = null;
 let seriesCurrentIndex = -1;
@@ -195,15 +203,16 @@ const seriesSlug = series || '';
   <!-- 浮动目录 + 回到顶部/底部 -->
   <PostToc />
 
-  <!-- 右侧标签栏（大屏显示） -->
-  {tags && tags.length > 0 && (
-    <aside class="post-tags-aside" aria-label="文章标签">
+  <!-- 右侧标签栏（大屏显示，全部标签） -->
+  {allTagsList.length > 0 && (
+    <aside class="post-tags-aside" aria-label="全部标签">
       <p class="post-tags-title">标签</p>
       <div class="post-tags-list">
-        {tags.map((tag) => (
-          <a href={`${base}/tags/${tag}`} class="post-tags-link">
+        {allTagsList.map(([tag, count]) => (
+          <a href={`${base}/tags/${tag}`} class={`post-tags-link ${currentTags.has(tag) ? 'active' : ''}`}>
             <span class="post-tags-hash">#</span>
             <span class="post-tags-name">{tag}</span>
+            <span class="post-tags-count">{count}</span>
           </a>
         ))}
       </div>
@@ -492,6 +501,32 @@ const seriesSlug = series || '';
     color: rgb(var(--brand));
     border-left-color: rgb(var(--brand));
     background: rgba(var(--brand-raw), 0.06);
+  }
+  .post-tags-link.active {
+    color: rgb(var(--brand));
+    border-left-color: rgb(var(--brand));
+    background: rgba(var(--brand-raw), 0.06);
+    font-weight: 600;
+  }
+  .post-tags-link.active .post-tags-hash {
+    color: rgb(var(--brand));
+  }
+  .post-tags-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: rgb(var(--border));
+    background: rgb(var(--muted) / 0.08);
+    padding: 0 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .post-tags-link:hover .post-tags-count {
+    color: rgb(var(--brand));
+    background: rgba(var(--brand-raw), 0.1);
+  }
+  .post-tags-link.active .post-tags-count {
+    color: rgb(var(--brand));
+    background: rgba(var(--brand-raw), 0.12);
   }
   .post-tags-hash {
     color: rgb(var(--border));
