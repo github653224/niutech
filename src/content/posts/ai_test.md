@@ -3,8 +3,7 @@ title: "2. 具备“自愈”能力的UI/E2E自动化测试框架"
 description: ""
 pubDate: 2026-07-01
 tags:
-  - "测试开发"
-  - "AI 测试"
+  - "AI测试"
 category: "AI 测试开发"
 series: "AI 测试提效实战"
 seriesOrder: 2
