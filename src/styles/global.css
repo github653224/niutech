@@ -166,15 +166,12 @@
   @apply font-semibold;
 }
 
-/* Shiki dual themes: 明暗模式代码块切换 */
+/* Shiki dual themes: 明暗模式代码块切换
+   Shiki 输出格式：浅色为内联 color/bg，深色为 --shiki-dark/--shiki-dark-bg 变量
+   浅色模式无需覆盖（内联样式即生效），仅需深色模式覆盖 */
 .astro-code,
 .astro-code span {
   transition: none !important;
-}
-html[data-theme='light'] .astro-code,
-html[data-theme='light'] .astro-code span {
-  color: var(--shiki-light) !important;
-  background-color: var(--shiki-light-bg) !important;
 }
 html[data-theme='dark'] .astro-code,
 html[data-theme='dark'] .astro-code span {
